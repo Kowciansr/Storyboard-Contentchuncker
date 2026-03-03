@@ -1397,9 +1397,6 @@ def generate_pptx(storyboard_json, pptx_b64, script_title):
 
     out = io.BytesIO()
     prs.save(out)
-    # DEBUG - remove after fix
-    slide0_shapes = [(s.name, s.text_frame.text[:30] if s.has_text_frame else '') for s in prs.slides[0].shapes]
-    raise RuntimeError(f"script_title={script_title!r}\nslide0 shapes={slide0_shapes}")
     return base64.b64encode(out.getvalue()).decode('utf-8')
 </script>
 
