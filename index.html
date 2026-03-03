@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScriptChunker for Storyboard</title>
+<title>ScriptChunk — Video Storyboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 <style>
@@ -475,7 +475,18 @@ tbody td:last-child{border-right:none;}
 .c-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);white-space:nowrap;width:52px;}
 .c-type{width:90px;}
 .c-ost{font-weight:600;color:var(--ink);font-size:12.5px;min-width:150px;max-width:190px;}
-.c-vo{min-width:220px;max-width:270px;font-size:11.5px;font-family:'DM Mono',monospace;line-height:1.75;}
+.c-vo{min-width:220px;max-width:270px;font-size:11.5px;font-family:'DM Mono',monospace;line-height:1.75;cursor:text;}
+.c-vo:hover .edit-hint{display:block;}
+.c-act{width:52px;text-align:center;vertical-align:middle;padding:4px 6px !important;}
+.row-btns{display:flex;flex-direction:column;gap:3px;align-items:center;}
+.btn-row{
+  width:22px;height:22px;border-radius:5px;border:1px solid var(--rule2);
+  background:var(--white);cursor:pointer;font-size:12px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;color:var(--muted);padding:0;
+}
+.btn-row:hover{background:var(--off2);color:var(--ink);}
+.btn-row.del:hover{background:#fef2f2;border-color:#fecaca;color:#dc2626;}
 .c-vis{min-width:160px;max-width:200px;font-size:12px;font-style:italic;}
 .c-dur{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted);white-space:nowrap;width:60px;}
 .c-int{min-width:160px;font-size:11.5px;}
@@ -511,7 +522,39 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
 .code-card{background:#1e1b18;color:#d4d0c8;font-family:'DM Mono',monospace;font-size:11px;padding:9px 11px;border-radius:7px;line-height:1.7;white-space:pre-wrap;}
 .err{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:11.5px;color:#dc2626;line-height:1.75;}
 
-/* ── SPACER ─────────────────────────────────────────────────── */
+/* ── EDITABLE CELLS ─────────────────────────────────────────── */
+.edit-hint{
+  font-family:'DM Mono',monospace;font-size:9px;color:var(--muted2);
+  padding:3px 6px;background:var(--off);border-top:1px solid var(--rule);
+  display:none;
+}
+td:focus-within .edit-hint{display:block;}
+[contenteditable]{
+  outline:none;
+  border-radius:4px;
+  min-height:1.4em;
+  display:block;
+  width:100%;
+  cursor:text;
+  transition:background .12s;
+  user-select:text;
+  -webkit-user-select:text;
+  pointer-events:all;
+  position:relative;
+  z-index:1;
+}
+[contenteditable]:hover{
+  background:var(--white);
+  border-radius:4px;
+  box-shadow:0 0 0 1px var(--rule2);
+}
+[contenteditable]:focus{
+  background:var(--white);
+  box-shadow:0 0 0 2px var(--blue-b);
+  border-radius:4px;
+  padding:2px 4px;
+  color:var(--ink);
+}
 .spacer{height:20px;flex-shrink:0;}
 
 @media(max-width:900px){
@@ -533,7 +576,7 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
       <div class="brand-logo">Script<em>Chunk</em></div>
       <div class="brand-tag">Pyodide · Offline</div>
     </div>
-    <div class="topbar-right">Coursera production storyboard &nbsp;·&nbsp; one screen per visual moment &nbsp;·&nbsp; .docx or paste</div>
+    <div class="topbar-right">Video production storyboard &nbsp;·&nbsp; one screen per visual moment &nbsp;·&nbsp; .docx or paste</div>
   </div>
 
   <!-- ── LEFT PANEL ─────────────────────────────────────────── -->
@@ -548,7 +591,7 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
       <div class="tpl-banner">
         <div class="tpl-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Coursera Script Template (.docx)
+          Script Template (.docx)
         </div>
         <div class="tpl-sub">Write your script in this Word template for the most accurate storyboard output. Includes all 7 section labels with instructions and examples.</div>
         <div class="tpl-checklist">
@@ -610,6 +653,24 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
 
       <div class="step-divider"></div>
 
+      <!-- STEP 4 — Video Title -->
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <div class="step-label">Video Title</div>
+      </div>
+      <div class="field">
+        <div class="fl">Title shown on every slide</div>
+        <input type="text" id="videoTitle"
+          placeholder="e.g. Lesson 1 Loading Data with pandas"
+          style="background:var(--off);border:1.5px solid var(--rule2);color:var(--ink);
+                 padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:12.5px;
+                 border-radius:8px;outline:none;width:100%;transition:border-color .15s;"
+          onfocus="this.style.borderColor='var(--blue)'"
+          onblur="this.style.borderColor='var(--rule2)'">
+      </div>
+
+      <div class="step-divider"></div>
+
       <!-- SETTINGS -->
       <div class="step-header">
         <div class="step-badge" style="background:var(--off2);color:var(--muted);">
@@ -659,19 +720,8 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
     <div class="out-tb" id="outTb" style="display:none">
       <div class="out-meta" id="outMeta"></div>
       <div class="tb-r">
-        <div class="vtog">
-          <button class="vb on" id="bTbl" onclick="sv('table')">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Table
-          </button>
-          <button class="vb" id="bCard" onclick="sv('card')">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="9" height="9" rx="1.5"/><rect x="13" y="4" width="9" height="9" rx="1.5"/><rect x="2" y="15" width="9" height="9" rx="1.5"/><rect x="13" y="15" width="9" height="9" rx="1.5"/></svg>Cards
-          </button>
-        </div>
         <button class="btn-ex" id="btnPptx" onclick="exportPptx()" title="Export as PPTX using uploaded template">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Export PPTX
-        </button>
-        <button class="btn-ex" onclick="doExport()">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON
         </button>
       </div>
     </div>
@@ -685,7 +735,7 @@ tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9
         <div class="welcome-hero">
           <div class="welcome-icon">🎬</div>
           <div class="welcome-title">Production-ready storyboards in seconds</div>
-          <div class="welcome-sub">Upload your Coursera video script and ScriptChunk splits it into one screen per visual moment — with OST, visuals, duration, and interaction notes for every scene.</div>
+          <div class="welcome-sub">Upload your video script and ScriptChunk splits it into one screen per visual moment — with scene type, voiceover, and duration for every screen.</div>
         </div>
 
         <!-- How it works -->
@@ -807,15 +857,56 @@ def infer_type(text, idx, total):
 
 # ─────────────────────────────────────────────────────────────
 # CODE BLOCK DETECTOR
+# Only fires on actual executable code lines, not prose that
+# merely mentions code methods like df.head() or sep=
 # ─────────────────────────────────────────────────────────────
 CODE_RE = re.compile(
-    r'(^import\s|^from\s+\w|^df\s*[=.]|^pd\.|'
-    r'\.read_csv\(|\.head\(|\.tail\(|\.info\(|\.shape|\.describe\(|'
-    r'encoding=|sep=|na_values=|\.fillna\(|\.dropna\(|\.groupby\()',
+    r'(^import\s|^from\s+\w+\s+import|^df\s*=\s*pd\.|^df\s*=\s*\w+\.read|'
+    r'^pd\.\w+\(|^df\.\w+\s*=)',
     re.MULTILINE | re.IGNORECASE
 )
 def is_code(text):
-    return bool(CODE_RE.search(text)) and ('(' in text or '=' in text)
+    """True when a block contains actual runnable code lines (needs splitting or is pure code)."""
+    lines = [l.strip() for l in text.strip().split('\n') if l.strip()]
+    # Strip bullet prefixes before checking — bullet items are never code
+    lines = [re.sub(r'^[·•\-\*]\s*', '', l) for l in lines]
+    # Also check double-space-separated inline segments
+    all_parts = []
+    for l in lines:
+        parts = re.split(r'\s{2,}', l)
+        all_parts.extend(p.strip() for p in parts if p.strip())
+    code_count = sum(1 for p in all_parts if CODE_RE.match(p) or re.match(r'^df\s*=\s*\w', p))
+    return code_count >= 1
+
+def split_inline_code(text):
+    """Split a paragraph containing mixed prose + code into (is_code, text) tuples.
+    Handles both newline-separated and double-space-separated inline code."""
+    # First split on newlines to get individual lines
+    raw_lines = [l.strip() for l in text.split('\n') if l.strip()]
+    
+    # For single-line blobs like "prose  import x  df=y", also split on 2+ spaces
+    # when the result looks like code
+    lines = []
+    for l in raw_lines:
+        parts = re.split(r'\s{2,}', l)
+        if len(parts) > 1:
+            lines.extend(p.strip() for p in parts if p.strip())
+        else:
+            lines.append(l)
+    
+    segments = []
+    for l in lines:
+        lc = bool(CODE_RE.match(l)) or bool(re.match(r'^df\s*=\s*\w', l))
+        segments.append((lc, l))
+    
+    # Merge consecutive same-type segments
+    merged = []
+    for lc, l in segments:
+        if merged and merged[-1][0] == lc:
+            merged[-1] = (lc, merged[-1][1] + '\n' + l)
+        else:
+            merged.append([lc, l])
+    return merged
 
 # ─────────────────────────────────────────────────────────────
 # SENTENCE SPLITTER
@@ -875,9 +966,9 @@ def make_ost(vo, stype):
 def make_visual(vo, stype, prod_note='', course_type='technical'):
     if prod_note: return prod_note
     if stype == 'Code':    return 'Screen recording — code types live in notebook; output visible below'
-    if stype == 'Objective': return 'Coursera-branded slide — animated checklist, items build one by one'
+    if stype == 'Objective': return 'Branded slide — animated checklist, items build one by one'
     if stype == 'Check':   return 'On-screen MCQ widget — 4 options displayed, learner selects before continuing'
-    if stype == 'Summary': return 'Coursera summary slide — key flow graphic or bullet recap'
+    if stype == 'Summary': return 'Summary slide — key flow graphic or bullet recap'
     if stype == 'CTA':     return 'SME on camera — next-item card or course nav graphic overlay'
     if stype == 'Hook':
         t = vo.lower()
@@ -907,11 +998,16 @@ def make_visual(vo, stype, prod_note='', course_type='technical'):
 # ─────────────────────────────────────────────────────────────
 def make_interaction(vo, stype, answer_text=''):
     if stype == 'Check':
-        lines   = [l.strip() for l in vo.split('\n') if l.strip()]
-        options = [l for l in lines if re.match(r'^[A-D][).\s]', l)]
-        note    = f"MCQ · {len(options)} options\n" + '\n'.join(options)
-        if answer_text: note += f'\n\n✅ {answer_text.strip()}'
-        return note.strip()
+        # Normalise: options may be newline-separated OR space-separated like "A) x  B) y"
+        normalised = re.sub(r'\s{2,}([A-D][).✅])', r'\n\1', vo)
+        normalised = re.sub(r'([A-D][).✅]\s)', r'\n\1', normalised)
+        lines   = [l.strip() for l in normalised.split('\n') if l.strip()]
+        options = [l for l in lines if re.match(r'^[✅]?[A-D][).✅\s]', l)]
+        result  = f"MCQ · {len(options)} options\n" + '\n'.join(options)
+        if answer_text:
+            clean = re.sub(r'^correct answer[:\s]+', '', answer_text.strip(), flags=re.I)
+            result += f'\n\n✅ Correct answer: {clean}'
+        return result.strip()
     if stype == 'Objective': return 'No interaction — learner reads objectives as they animate onto screen'
     if stype == 'Hook':      return 'Optional: pre-lesson poll — "Rate your familiarity (1–5)"'
     if stype == 'Summary':   return 'End-of-video prompt: "List the 3 things you will apply from this lesson"'
@@ -986,8 +1082,26 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
     if docx_b64:
         items = parse_docx(docx_b64)
     else:
-        items = [{'text': p.strip(), 'style': 'Normal'}
-                 for p in re.split(r'\n\s*\n', plain_text.strip()) if p.strip()]
+        # For plain text, split on blank lines — but also split label from body
+        # when they appear on the same paragraph (label\nbody with no blank line)
+        raw_paras = [p.strip() for p in re.split(r'\n\s*\n', plain_text.strip()) if p.strip()]
+        items = []
+        for para in raw_paras:
+            lines = para.split('\n')
+            first_line = lines[0].strip()
+            ltype, _ = parse_label(first_line)
+            if ltype and len(lines) > 1:
+                # Label on first line — emit label separately
+                items.append({'text': first_line, 'style': 'Normal'})
+                # Emit remaining lines individually (handles bullet lines)
+                for l in lines[1:]:
+                    l = l.strip()
+                    if l:
+                        # Bullet line → List Paragraph style
+                        style_hint = 'List Paragraph' if re.match(r'^[·•\-\*]\s*', l) else 'Normal'
+                        items.append({'text': l, 'style': style_hint})
+            else:
+                items.append({'text': para, 'style': 'Normal'})
 
     screens      = []
     cur_type     = None      # None until first label or first paragraph
@@ -1011,7 +1125,7 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             'duration':     f'~{secs(vo_text)}s',
             'interaction':  make_interaction(vo_text, stype, ans),
             'wordCount':    wc(vo_text),
-            'isCode':       is_code(vo_text),
+            'isCode':       stype == 'Code',
             'inferred':     inferred,
             'color':        m['color'],
             'pillClass':    m['pill'] + (' p-infer' if inferred else ''),
@@ -1021,8 +1135,14 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
     def flush_objectives():
         nonlocal obj_bullets, cur_note
         if obj_bullets:
+            # Strip any repeated "By the end of this video..." header bullet
+            bullets = [b for b in obj_bullets
+                       if not re.match(r'^by the end of this video', b, re.I)
+                       and not re.match(r'^·\s*$', b)]
+            if not bullets:
+                bullets = obj_bullets  # fallback
             vo = 'By the end of this video, you will be able to:\n' + \
-                 '\n'.join(f'• {b}' for b in obj_bullets)
+                 '\n'.join(f'• {b}' for b in bullets)
             screens.append(make_screen(vo, 'Objective', cur_note))
             obj_bullets = []
             cur_note = ''
@@ -1065,22 +1185,38 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             inferred_run = True
 
         # ── Objective bullets ────────────────────────────────
-        if style == 'List Paragraph' or (cur_type == 'Objective' and not is_code(text)):
-            obj_bullets.append(text)
+        is_bullet = (style == 'List Paragraph' or
+                     re.match(r'^[·•\-\*]\s*', text) or
+                     (cur_type == 'Objective' and not is_code(text)))
+        if is_bullet and cur_type == 'Objective':
+            # Strip leading bullet character and whitespace
+            clean_bullet = re.sub(r'^[·•\-\*]\s*', '', text).strip()
+            if clean_bullet:  # skip bare bullet lines
+                obj_bullets.append(clean_bullet)
             continue
 
         flush_objectives()
 
-        # ── Code block → one Code screen ────────────────────
-        if is_code(text):
-            screens.append(make_screen(text, 'Code', cur_note, inferred=inferred_run))
-            cur_note = ''
-            continue
-
-        # ── Check → one screen for the whole block ───────────
+        # ── Check → one screen for the whole block (never treat as code) ─
         if cur_type == 'Check':
             screens.append(make_screen(text, 'Check', cur_note, answer_text, inferred=inferred_run))
             cur_note = ''
+            continue
+
+        # ── Code block → split inline code from prose, one Code screen each ─
+        # (never trigger for Objective — bullets may mention method names)
+        if is_code(text) and cur_type != 'Objective':
+            segments = split_inline_code(text)
+            for seg_is_code, seg_text in segments:
+                if seg_is_code:
+                    screens.append(make_screen(seg_text, 'Code', cur_note, inferred=inferred_run))
+                else:
+                    # prose attached to code block — treat as Concept sentence
+                    prose_type = cur_type if cur_type not in ('Check',) else 'Concept'
+                    sents = split_sentences(seg_text) or [seg_text]
+                    for sent in sents:
+                        screens.append(make_screen(sent, prose_type, cur_note, inferred=inferred_run))
+                cur_note = ''
             continue
 
         # ── Normal VO: split to sentence-level screens ───────
@@ -1096,7 +1232,7 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             w = wc(sent)
 
             # Very short bridging phrase ending ':' → merge with previous
-            if w <= 8 and sent.rstrip().endswith(':') and not triggers_new_screen(sent):
+            if w <= 12 and sent.rstrip().endswith(':') and not triggers_new_screen(sent):
                 if screens and screens[-1]['sceneType'] == cur_type:
                     screens[-1]['vo']        += ' ' + sent
                     screens[-1]['wordCount'] += w
@@ -1111,7 +1247,7 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             can_merge = (
                 screens
                 and screens[-1]['sceneType'] == cur_type
-                and screens[-1]['wordCount'] + w <= 22
+                and screens[-1]['wordCount'] + w <= 55
                 and not triggers_new_screen(sent)
                 and not is_code(sent)
             )
@@ -1172,126 +1308,98 @@ def generate_pptx(storyboard_json, pptx_b64, script_title):
     from pptx import Presentation
     from pptx.util import Pt, Emu
     from pptx.dml.color import RGBColor
-    from lxml import etree
-    from pptx.oxml.ns import qn
+    from pptx.enum.text import PP_ALIGN
 
-    data    = json.loads(storyboard_json)
-    screens = data['screens']
-    total   = len(screens)
+    data         = json.loads(storyboard_json)
+    screens      = data['screens']
+    total        = data['totalScreens']
+    script_title = str(script_title)
 
-    pptx_bytes = base64.b64decode(pptx_b64)
+    prs = Presentation(io.BytesIO(base64.b64decode(pptx_b64)))
 
-    # ── Widen the "Interaction:" and "Media:" label boxes in
-    #    the slide layout so they don't wrap ────────────────
-    # We do this by patching the layout XML directly before
-    # loading with python-pptx.
-    import zipfile, shutil, tempfile, os
-    tmp_dir = tempfile.mkdtemp()
-    with zipfile.ZipFile(io.BytesIO(pptx_bytes)) as z:
-        z.extractall(tmp_dir)
+    # ── 1. Reduce to exactly 1 slide ─────────────────────────────────────────
+    xml_slides = prs.slides._sldIdLst
+    while len(prs.slides) > 1:
+        sldId = xml_slides[-1]
+        rId = sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+        if rId:
+            prs.part.drop_rel(rId)
+        xml_slides.remove(sldId)
 
-    layout_path = os.path.join(tmp_dir, 'ppt', 'slideLayouts', 'slideLayout1.xml')
-    if os.path.exists(layout_path):
-        with open(layout_path, 'r', encoding='utf-8') as f:
-            layout_xml = f.read()
-        # Widen Interaction label (was 994183) and Media label (was 639919)
-        layout_xml = layout_xml.replace('cx="994183" cy="276999"', 'cx="2800000" cy="276999"')
-        layout_xml = layout_xml.replace('cx="639919" cy="276999"',  'cx="2800000" cy="276999"')
-        with open(layout_path, 'w', encoding='utf-8') as f:
-            f.write(layout_xml)
+    # ── 2. Strip stale content boxes from slide 0 ────────────────────────────
+    KEEP = {'TextBox 4', 'TextBox 6', 'TextBox 7'}
+    s0   = prs.slides[0]
+    for el in [s._element for s in s0.shapes if s.name not in KEEP]:
+        s0.shapes._spTree.remove(el)
 
-    # Repack to a bytes buffer
-    buf2 = io.BytesIO()
-    with zipfile.ZipFile(buf2, 'w', zipfile.ZIP_DEFLATED) as zout:
-        for root, dirs, files in os.walk(tmp_dir):
-            for fn in files:
-                fpath = os.path.join(root, fn)
-                arcname = os.path.relpath(fpath, tmp_dir)
-                zout.write(fpath, arcname)
-    shutil.rmtree(tmp_dir)
-    pptx_bytes = buf2.getvalue()
+    # ── 3. Duplicate to get exactly `total` slides ───────────────────────────
+    def dup(prs):
+        src = prs.slides[0]
+        ns  = prs.slides.add_slide(src.slide_layout)
+        dt  = ns.shapes._spTree
+        for c in list(dt): dt.remove(c)
+        for c in src.shapes._spTree: dt.append(copy.deepcopy(c))
 
-    prs = Presentation(io.BytesIO(pptx_bytes))
+    for _ in range(total - 1):
+        dup(prs)
 
-    def add_textbox(slide, left, top, width, height, lines_list,
-                    font_size=11, bold=False, color='2B3441',
-                    font_name='Source Sans Pro'):
-        txBox = slide.shapes.add_textbox(
-            Emu(left), Emu(top), Emu(width), Emu(height))
-        tf = txBox.text_frame
-        tf.word_wrap = True
-        for li, line in enumerate(lines_list):
-            p = tf.paragraphs[0] if li == 0 else tf.add_paragraph()
-            run = p.add_run()
-            run.text = line
-            run.font.size = Pt(font_size)
-            run.font.bold = bold
-            run.font.color.rgb = RGBColor.from_string(color)
-            run.font.name = font_name
-        return txBox
-
-    def set_shape_text(shape, text, font_size=11,
-                       color='2B3441', font_name='Source Sans Pro'):
+    # ── 4. Helper: write text into a shape preserving original font size ──────
+    def fill(shape, text, white=False):
         tf = shape.text_frame
+        orig_size = None
+        orig_name = None
+        for para in tf.paragraphs:
+            for run in para.runs:
+                if run.font.size and orig_size is None:
+                    orig_size = run.font.size
+                if run.font.name and orig_name is None:
+                    orig_name = run.font.name
         tf.clear()
-        p = tf.paragraphs[0]
+        p   = tf.paragraphs[0]
         run = p.add_run()
         run.text = text
-        run.font.size = Pt(font_size)
-        run.font.color.rgb = RGBColor.from_string(color)
-        run.font.name = font_name
+        if orig_size:
+            run.font.size = orig_size
+        if orig_name:
+            run.font.name = orig_name
+        run.font.bold      = False
+        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if white else RGBColor(0x00, 0x00, 0x00)
 
-    def duplicate_slide(prs, src_index=0):
-        src      = prs.slides[src_index]
-        new_s    = prs.slides.add_slide(src.slide_layout)
-        src_tree = src.shapes._spTree
-        dst_tree = new_s.shapes._spTree
-        for child in list(dst_tree): dst_tree.remove(child)
-        for child in src_tree:       dst_tree.append(copy.deepcopy(child))
-        return new_s
-
-    # Create total-1 more slides (slide 0 already exists)
-    for _ in range(total - 1):
-        duplicate_slide(prs, 0)
-
+    # ── 5. Fill each slide ────────────────────────────────────────────────────
     for i, sc in enumerate(screens):
         slide = prs.slides[i]
 
-        # Edit the two editable shapes already on the slide
         for shape in slide.shapes:
-            # Slide-number box (TextBox 4): x≈7429213, y≈295820
-            if abs(shape.left - 7429213) < 100000 and abs(shape.top - 295820) < 100000:
-                set_shape_text(shape, str(sc['screenNumber']),
-                               font_size=12, color='FFFFFF')
-            # Transcript text (TextBox 6): x≈436666, y≈5260786
-            elif abs(shape.left - 436666) < 100000 and abs(shape.top - 5260786) < 100000:
-                set_shape_text(shape, sc['vo'], font_size=11, color='2B3441')
+            if not shape.has_text_frame:
+                continue
+            if shape.name == 'TextBox 7':
+                fill(shape, script_title, white=True)
+            elif shape.name == 'TextBox 4':
+                fill(shape, str(sc['screenNumber']), white=True)
+                shape.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+            elif shape.name == 'TextBox 6':
+                fill(shape, sc['vo'], white=False)
 
-        # Title text — after the "Title:" label
-        add_textbox(slide, 900000, 268000, 5800000, 300000,
-                    [script_title], font_size=12, color='FFFFFF')
-
-        # Main visual zone — scene badge + OST + visual description
-        add_textbox(slide, 350000, 720000, 7900000, 3900000,
-                    [f"[{sc['sceneType'].upper()}]  •  Screen {sc['screenNumber']} of {total}  •  {sc['duration']}",
-                     "", "On-Screen Text:", sc['ost'],
-                     "", "Visuals / Production Notes:", sc['visuals']],
-                    font_size=11, color='2B3441')
-
-        # Interaction — below "Interaction:" label (label ends ~y=620000)
-        add_textbox(slide, 8650000, 630000, 2900000, 2000000,
-                    sc['interaction'].split('\n'),
-                    font_size=10, color='2B3441')
-
-        # Media — below "Media:" label (label ends ~y=3200000)
-        add_textbox(slide, 8650000, 3200000, 2900000, 3200000,
-                    [sc['visuals'], "",
-                     f"Duration: {sc['duration']}",
-                     f"Type: {sc['sceneType']}"],
-                    font_size=10, color='2B3441')
+        # Add "To be filled by ID" in Interaction and Media panels
+        for (left, top, width, height) in [
+            (8534400, 600000,  3429000, 2000000),   # Interaction
+            (8534400, 3230000, 3429000, 3000000),    # Media
+        ]:
+            txb = slide.shapes.add_textbox(Emu(left), Emu(top), Emu(width), Emu(height))
+            tf  = txb.text_frame
+            tf.word_wrap = True
+            run = tf.paragraphs[0].add_run()
+            run.text           = 'To be filled by ID'
+            run.font.size      = Pt(12)
+            run.font.name      = 'Aptos'
+            run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
+            run.font.italic    = False
 
     out = io.BytesIO()
     prs.save(out)
+    # DEBUG - remove after fix
+    slide0_shapes = [(s.name, s.text_frame.text[:30] if s.has_text_frame else '') for s in prs.slides[0].shapes]
+    raise RuntimeError(f"script_title={script_title!r}\nslide0 shapes={slide0_shapes}")
     return base64.b64encode(out.getvalue()).decode('utf-8')
 </script>
 
@@ -1335,7 +1443,7 @@ async function boot(){
 function downloadTemplate(){
   const b=Uint8Array.from(atob(TEMPLATE_B64),c=>c.charCodeAt(0));
   const blob=new Blob([b],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'Coursera_Script_Template.docx'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'Script_Template.docx'});
   a.click(); URL.revokeObjectURL(a.href);
 }
 
@@ -1368,13 +1476,20 @@ async function exportPptx(){
     // Derive script title from first screen's OST or the script label
     const title = lastData.screens[0]?.vo?.split('\n')[0]?.split('.')?.[0] || 'Video Script';
     // Use the lesson title: look for a title in the script or fall back
-    const scriptTitle = window._scriptTitle || title;
+    const scriptTitle = document.getElementById('videoTitle').value.trim() || window._scriptTitle || 'Video Script';
 
     py.globals.set('_sb_json',    JSON.stringify(lastData));
     py.globals.set('_pptx_b64',   pptxTemplateB64);
     py.globals.set('_title',      scriptTitle);
 
-    const b64=await py.runPythonAsync(`generate_pptx(_sb_json, _pptx_b64, _title)`);
+    const b64=await py.runPythonAsync(`
+try:
+    result = generate_pptx(_sb_json, _pptx_b64, _title)
+except Exception as e:
+    import traceback
+    raise RuntimeError(traceback.format_exc())
+result
+`);
     const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
     const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
     const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'storyboard.pptx'});
@@ -1410,6 +1525,12 @@ function handleFile(file){
       document.getElementById('ta').value='';
       document.getElementById('wc').textContent='(docx loaded)';
       document.getElementById('inferNote').classList.remove('show');
+      // Pre-fill title from filename if user hasn't typed one yet
+      const titleField = document.getElementById('videoTitle');
+      if(!titleField.value.trim()){
+        const fname = document.getElementById('fname').textContent.replace('📎 ','').trim();
+        titleField.value = fname.replace(/\.docx$/i,'').replace(/_/g,' ');
+      }
     };
     r.readAsArrayBuffer(file);
   }
@@ -1492,12 +1613,66 @@ async function run(){
   document.getElementById('bsub').textContent='one screen per visual moment';
 }
 
-// ── View switch ───────────────────────────────────────────────
-function sv(v){
-  curView=v;
-  document.getElementById('bTbl').className='vb'+(v==='table'?' on':'');
-  document.getElementById('bCard').className='vb'+(v==='card'?' on':'');
-  if(lastData)renderOutput(lastData);
+// ── Delegate clicks on c-vo cells to focus the contenteditable ──
+document.getElementById('outBody').addEventListener('click', function(e){
+  const td = e.target.closest('td.c-vo');
+  if(!td) return;
+  const ce = td.querySelector('[contenteditable]');
+  if(ce && document.activeElement !== ce){ ce.focus(); }
+});
+
+// ── Row helpers ───────────────────────────────────────────────
+function addRowAfter(idx){
+  if(!lastData) return;
+  const ref = lastData.screens[idx];
+  const newScreen = {
+    screenNumber: 0, // will renumber
+    sceneType:    ref.sceneType,
+    ost:          '',
+    vo:           '',
+    visuals:      '',
+    duration:     '~5s',
+    interaction:  '—',
+    wordCount:    0,
+    isCode:       false,
+    inferred:     false,
+    color:        ref.color,
+    pillClass:    ref.pillClass,
+    rowClass:     ref.rowClass,
+  };
+  lastData.screens.splice(idx + 1, 0, newScreen);
+  renumberScreens();
+  renderTable(lastData);
+}
+
+function deleteRow(idx){
+  if(!lastData || lastData.screens.length <= 1) return;
+  lastData.screens.splice(idx, 1);
+  renumberScreens();
+  renderTable(lastData);
+}
+
+function renumberScreens(){
+  lastData.screens.forEach((sc, i) => { sc.screenNumber = i + 1; });
+  lastData.totalScreens = lastData.screens.length;
+  // Regroup segments simply (one group)
+  lastData.segments = [lastData.screens.map(s => s.screenNumber)];
+  // Update meta bar
+  document.getElementById('outMeta').innerHTML =
+    `<strong>${lastData.totalScreens} screens</strong> · ~${lastData.totalMins} min · ${lastData.totalWords.toLocaleString()} words`;
+}
+
+// ── Inline edit: sync contenteditable back to lastData ────────
+function saveEdit(el){
+  const idx = parseInt(el.dataset.idx, 10);
+  const field = el.dataset.field;
+  if(!lastData || isNaN(idx)) return;
+  // Get plain text — replace <br> with newline
+  const updated = el.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');
+  lastData.screens[idx][field] = updated.trim();
 }
 
 // ── Render dispatcher ─────────────────────────────────────────
@@ -1510,8 +1685,7 @@ function renderOutput(data){
     : '';
   document.getElementById('outMeta').innerHTML=
     `<strong>${data.totalScreens} screens</strong> · ${data.totalSegs} segment${data.totalSegs!==1?'s':''} · ~${data.totalMins} min · ${data.totalWords.toLocaleString()} words${inferMsg}`;
-  if(curView==='table') renderTable(data);
-  else renderCards(data);
+  renderTable(data);
 }
 
 // ── TABLE VIEW ────────────────────────────────────────────────
@@ -1527,8 +1701,8 @@ function renderTable(data){
   let html=banner+`<div class="tbl-scroll"><table>
     <thead><tr>
       <th>Screen #</th><th>Scene Type</th>
-      <th>Voiceover / Script (VO)</th>
-      <th>Duration</th>
+      <th>Voiceover / Script (VO) &nbsp;<span style="font-weight:400;opacity:.6;font-size:8px">✎ click to edit</span></th>
+      <th>Duration</th><th style="width:44px"></th>
     </tr></thead><tbody>`;
 
   let lastSeg=0;
@@ -1540,16 +1714,22 @@ function renderTable(data){
         const s=data.screens[n-1];
         return a+(s?parseInt(s.duration.replace(/\D/g,''),10):0);
       },0);
-      html+=`<tr class="seg-row"><td colspan="4">Segment ${seg} — ~${(segSecs/60).toFixed(1)} min</td></tr>`;
+      html+=`<tr class="seg-row"><td colspan="5">Segment ${seg} — ~${(segSecs/60).toFixed(1)} min</td></tr>`;
       lastSeg=seg;
     }
-    const voHtml=sc.isCode?`<div class="code-td">${esc(sc.vo)}</div>`:esc(sc.vo).replace(/\n/g,'<br>');
+    const voContent = sc.isCode
+      ? `<div class="code-td" contenteditable="true" tabindex="0" data-idx="${i}" data-field="vo" spellcheck="false" onclick="this.focus()" onblur="saveEdit(this)">${esc(sc.vo)}</div>`
+      : `<div contenteditable="true" tabindex="0" data-idx="${i}" data-field="vo" spellcheck="false" onclick="this.focus()" onblur="saveEdit(this)">${esc(sc.vo).replace(/\n/g,'<br>')}</div>`;
     const inferTag=sc.inferred?` <span style="font-size:9px;color:#f97316;font-family:'DM Mono',monospace">inferred</span>`:'';
-    html+=`<tr class="${sc.rowClass}" style="animation-delay:${i*20}ms">
+    html+=`<tr class="${sc.rowClass}" style="animation-delay:${i*20}ms" data-idx="${i}">
       <td class="c-num">S${String(sc.screenNumber).padStart(2,'0')}</td>
       <td class="c-type"><span class="pill ${sc.pillClass}">${sc.sceneType}</span>${inferTag}</td>
-      <td class="c-vo">${voHtml}</td>
+      <td class="c-vo">${voContent}<div class="edit-hint">↵ changes saved automatically · reflected in PPTX export</div></td>
       <td class="c-dur">${esc(sc.duration)}</td>
+      <td class="c-act"><div class="row-btns">
+        <button class="btn-row" title="Add row below" onclick="addRowAfter(${i})">+</button>
+        <button class="btn-row del" title="Delete row" onclick="deleteRow(${i})">✕</button>
+      </div></td>
     </tr>`;
   });
   html+=`</tbody></table></div>`;
@@ -1604,14 +1784,6 @@ function renderCards(data){
   });
   html+=`</div>`;
   document.getElementById('outBody').innerHTML=html;
-}
-
-// ── Export ────────────────────────────────────────────────────
-function doExport(){
-  if(!lastData)return;
-  const b=new Blob([JSON.stringify(lastData,null,2)],{type:'application/json'});
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(b),download:'storyboard.json'});
-  a.click(); URL.revokeObjectURL(a.href);
 }
 
 function esc(s){
