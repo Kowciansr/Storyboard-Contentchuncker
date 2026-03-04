@@ -475,18 +475,7 @@ tbody td:last-child{border-right:none;}
 .c-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);white-space:nowrap;width:52px;}
 .c-type{width:90px;}
 .c-ost{font-weight:600;color:var(--ink);font-size:12.5px;min-width:150px;max-width:190px;}
-.c-vo{min-width:220px;max-width:270px;font-size:11.5px;font-family:'DM Mono',monospace;line-height:1.75;cursor:text;}
-.c-vo:hover .edit-hint{display:block;}
-.c-act{width:52px;text-align:center;vertical-align:middle;padding:4px 6px !important;}
-.row-btns{display:flex;flex-direction:column;gap:3px;align-items:center;}
-.btn-row{
-  width:22px;height:22px;border-radius:5px;border:1px solid var(--rule2);
-  background:var(--white);cursor:pointer;font-size:12px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .12s;color:var(--muted);padding:0;
-}
-.btn-row:hover{background:var(--off2);color:var(--ink);}
-.btn-row.del:hover{background:#fef2f2;border-color:#fecaca;color:#dc2626;}
+.c-vo{min-width:220px;max-width:270px;font-size:11.5px;font-family:'DM Mono',monospace;line-height:1.75;}
 .c-vis{min-width:160px;max-width:200px;font-size:12px;font-style:italic;}
 .c-dur{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted);white-space:nowrap;width:60px;}
 .c-int{min-width:160px;font-size:11.5px;}
@@ -532,28 +521,14 @@ td:focus-within .edit-hint{display:block;}
 [contenteditable]{
   outline:none;
   border-radius:4px;
-  min-height:1.4em;
-  display:block;
-  width:100%;
-  cursor:text;
+  min-height:1em;
   transition:background .12s;
-  user-select:text;
-  -webkit-user-select:text;
-  pointer-events:all;
-  position:relative;
-  z-index:1;
-}
-[contenteditable]:hover{
-  background:var(--white);
-  border-radius:4px;
-  box-shadow:0 0 0 1px var(--rule2);
 }
 [contenteditable]:focus{
-  background:var(--white);
+  background:var(--blue-l);
   box-shadow:0 0 0 2px var(--blue-b);
   border-radius:4px;
   padding:2px 4px;
-  color:var(--ink);
 }
 .spacer{height:20px;flex-shrink:0;}
 
@@ -664,7 +639,7 @@ td:focus-within .edit-hint{display:block;}
           placeholder="e.g. Lesson 1 Loading Data with pandas"
           style="background:var(--off);border:1.5px solid var(--rule2);color:var(--ink);
                  padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:12.5px;
-                 border-radius:8px;outline:none;width:100%;transition:border-color .15s;"
+                 border-radius:8px;outline:none;width:100%;box-sizing:border-box;transition:border-color .15s;"
           onfocus="this.style.borderColor='var(--blue)'"
           onblur="this.style.borderColor='var(--rule2)'">
       </div>
@@ -1232,7 +1207,7 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             w = wc(sent)
 
             # Very short bridging phrase ending ':' → merge with previous
-            if w <= 12 and sent.rstrip().endswith(':') and not triggers_new_screen(sent):
+            if w <= 8 and sent.rstrip().endswith(':') and not triggers_new_screen(sent):
                 if screens and screens[-1]['sceneType'] == cur_type:
                     screens[-1]['vo']        += ' ' + sent
                     screens[-1]['wordCount'] += w
@@ -1247,7 +1222,7 @@ def generate_storyboard(docx_b64, plain_text, course_type, audience):
             can_merge = (
                 screens
                 and screens[-1]['sceneType'] == cur_type
-                and screens[-1]['wordCount'] + w <= 55
+                and screens[-1]['wordCount'] + w <= 22
                 and not triggers_new_screen(sent)
                 and not is_code(sent)
             )
@@ -1309,6 +1284,7 @@ def generate_pptx(storyboard_json, pptx_b64, script_title):
     from pptx.util import Pt, Emu
     from pptx.dml.color import RGBColor
     from pptx.enum.text import PP_ALIGN
+    from pptx.oxml.ns import qn
 
     data         = json.loads(storyboard_json)
     screens      = data['screens']
@@ -1317,83 +1293,86 @@ def generate_pptx(storyboard_json, pptx_b64, script_title):
 
     prs = Presentation(io.BytesIO(base64.b64decode(pptx_b64)))
 
-    # ── 1. Reduce to exactly 1 slide ─────────────────────────────────────────
+    # 1. Reduce to 1 slide
     xml_slides = prs.slides._sldIdLst
     while len(prs.slides) > 1:
         sldId = xml_slides[-1]
         rId = sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
-        if rId:
-            prs.part.drop_rel(rId)
+        if rId: prs.part.drop_rel(rId)
         xml_slides.remove(sldId)
 
-    # ── 2. Strip stale content boxes from slide 0 ────────────────────────────
-    KEEP = {'TextBox 4', 'TextBox 6', 'TextBox 7'}
-    s0   = prs.slides[0]
+    # 2. Strip everything except the 3 permanent shapes
+    KEEP = {'TextBox 1', 'TextBox 4', 'TextBox 6'}
+    s0 = prs.slides[0]
     for el in [s._element for s in s0.shapes if s.name not in KEEP]:
         s0.shapes._spTree.remove(el)
 
-    # ── 3. Duplicate to get exactly `total` slides ───────────────────────────
+    # 3. Resize TextBox 1 to fill the full blue title bar
+    for s in s0.shapes:
+        if s.name == 'TextBox 1':
+            xfrm = s._element.find('.//' + qn('a:xfrm'))
+            if xfrm is not None:
+                off = xfrm.find(qn('a:off'))
+                ext = xfrm.find(qn('a:ext'))
+                if off is not None:
+                    off.set('x', '602316')
+                    off.set('y', '228600')
+                if ext is not None:
+                    ext.set('cx', '6255684')
+                    ext.set('cy', '381001')
+
+    # 4. Duplicate to total slides
     def dup(prs):
         src = prs.slides[0]
         ns  = prs.slides.add_slide(src.slide_layout)
         dt  = ns.shapes._spTree
         for c in list(dt): dt.remove(c)
         for c in src.shapes._spTree: dt.append(copy.deepcopy(c))
-
     for _ in range(total - 1):
         dup(prs)
 
-    # ── 4. Helper: write text into a shape preserving original font size ──────
+    # 5. Fill helper
     def fill(shape, text, white=False):
         tf = shape.text_frame
-        orig_size = None
-        orig_name = None
+        orig_size = None; orig_name = None
         for para in tf.paragraphs:
             for run in para.runs:
-                if run.font.size and orig_size is None:
-                    orig_size = run.font.size
-                if run.font.name and orig_name is None:
-                    orig_name = run.font.name
+                if run.font.size and orig_size is None: orig_size = run.font.size
+                if run.font.name and orig_name is None: orig_name = run.font.name
         tf.clear()
-        p   = tf.paragraphs[0]
-        run = p.add_run()
+        p = tf.paragraphs[0]; run = p.add_run()
         run.text = text
-        if orig_size:
-            run.font.size = orig_size
-        if orig_name:
-            run.font.name = orig_name
-        run.font.bold      = False
+        run.font.size = orig_size or Pt(12)
+        if orig_name: run.font.name = orig_name
+        run.font.bold = False
         run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if white else RGBColor(0x00, 0x00, 0x00)
 
-    # ── 5. Fill each slide ────────────────────────────────────────────────────
+    # 6. Fill each slide
     for i, sc in enumerate(screens):
         slide = prs.slides[i]
 
+        # Add placeholder boxes below Interaction/Media labels
+        for (left, top, width, height) in [
+            (8610600, 631025, 3352800, 1850000),
+            (8610600, 3222599, 3352800, 3100000),
+        ]:
+            txb = slide.shapes.add_textbox(Emu(left), Emu(top), Emu(width), Emu(height))
+            tf  = txb.text_frame; tf.word_wrap = True
+            run = tf.paragraphs[0].add_run()
+            run.text = 'To be filled by ID'
+            run.font.size = Pt(12); run.font.name = 'Aptos'
+            run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
+
+        # Fill named shapes last so title always wins
         for shape in slide.shapes:
-            if not shape.has_text_frame:
-                continue
-            if shape.name == 'TextBox 7':
+            if not shape.has_text_frame: continue
+            if shape.name == 'TextBox 1':
                 fill(shape, script_title, white=True)
             elif shape.name == 'TextBox 4':
                 fill(shape, str(sc['screenNumber']), white=True)
                 shape.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
             elif shape.name == 'TextBox 6':
                 fill(shape, sc['vo'], white=False)
-
-        # Add "To be filled by ID" in Interaction and Media panels
-        for (left, top, width, height) in [
-            (8534400, 600000,  3429000, 2000000),   # Interaction
-            (8534400, 3230000, 3429000, 3000000),    # Media
-        ]:
-            txb = slide.shapes.add_textbox(Emu(left), Emu(top), Emu(width), Emu(height))
-            tf  = txb.text_frame
-            tf.word_wrap = True
-            run = tf.paragraphs[0].add_run()
-            run.text           = 'To be filled by ID'
-            run.font.size      = Pt(12)
-            run.font.name      = 'Aptos'
-            run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
-            run.font.italic    = False
 
     out = io.BytesIO()
     prs.save(out)
@@ -1473,7 +1452,7 @@ async function exportPptx(){
     // Derive script title from first screen's OST or the script label
     const title = lastData.screens[0]?.vo?.split('\n')[0]?.split('.')?.[0] || 'Video Script';
     // Use the lesson title: look for a title in the script or fall back
-    const scriptTitle = document.getElementById('videoTitle').value.trim() || window._scriptTitle || 'Video Script';
+    const scriptTitle = document.getElementById('videoTitle')?.value.trim() || window._scriptTitle || 'Video Script';
 
     py.globals.set('_sb_json',    JSON.stringify(lastData));
     py.globals.set('_pptx_b64',   pptxTemplateB64);
@@ -1522,12 +1501,6 @@ function handleFile(file){
       document.getElementById('ta').value='';
       document.getElementById('wc').textContent='(docx loaded)';
       document.getElementById('inferNote').classList.remove('show');
-      // Pre-fill title from filename if user hasn't typed one yet
-      const titleField = document.getElementById('videoTitle');
-      if(!titleField.value.trim()){
-        const fname = document.getElementById('fname').textContent.replace('📎 ','').trim();
-        titleField.value = fname.replace(/\.docx$/i,'').replace(/_/g,' ');
-      }
     };
     r.readAsArrayBuffer(file);
   }
@@ -1610,55 +1583,6 @@ async function run(){
   document.getElementById('bsub').textContent='one screen per visual moment';
 }
 
-// ── Delegate clicks on c-vo cells to focus the contenteditable ──
-document.getElementById('outBody').addEventListener('click', function(e){
-  const td = e.target.closest('td.c-vo');
-  if(!td) return;
-  const ce = td.querySelector('[contenteditable]');
-  if(ce && document.activeElement !== ce){ ce.focus(); }
-});
-
-// ── Row helpers ───────────────────────────────────────────────
-function addRowAfter(idx){
-  if(!lastData) return;
-  const ref = lastData.screens[idx];
-  const newScreen = {
-    screenNumber: 0, // will renumber
-    sceneType:    ref.sceneType,
-    ost:          '',
-    vo:           '',
-    visuals:      '',
-    duration:     '~5s',
-    interaction:  '—',
-    wordCount:    0,
-    isCode:       false,
-    inferred:     false,
-    color:        ref.color,
-    pillClass:    ref.pillClass,
-    rowClass:     ref.rowClass,
-  };
-  lastData.screens.splice(idx + 1, 0, newScreen);
-  renumberScreens();
-  renderTable(lastData);
-}
-
-function deleteRow(idx){
-  if(!lastData || lastData.screens.length <= 1) return;
-  lastData.screens.splice(idx, 1);
-  renumberScreens();
-  renderTable(lastData);
-}
-
-function renumberScreens(){
-  lastData.screens.forEach((sc, i) => { sc.screenNumber = i + 1; });
-  lastData.totalScreens = lastData.screens.length;
-  // Regroup segments simply (one group)
-  lastData.segments = [lastData.screens.map(s => s.screenNumber)];
-  // Update meta bar
-  document.getElementById('outMeta').innerHTML =
-    `<strong>${lastData.totalScreens} screens</strong> · ~${lastData.totalMins} min · ${lastData.totalWords.toLocaleString()} words`;
-}
-
 // ── Inline edit: sync contenteditable back to lastData ────────
 function saveEdit(el){
   const idx = parseInt(el.dataset.idx, 10);
@@ -1699,7 +1623,7 @@ function renderTable(data){
     <thead><tr>
       <th>Screen #</th><th>Scene Type</th>
       <th>Voiceover / Script (VO) &nbsp;<span style="font-weight:400;opacity:.6;font-size:8px">✎ click to edit</span></th>
-      <th>Duration</th><th style="width:44px"></th>
+      <th>Duration</th>
     </tr></thead><tbody>`;
 
   let lastSeg=0;
@@ -1711,22 +1635,18 @@ function renderTable(data){
         const s=data.screens[n-1];
         return a+(s?parseInt(s.duration.replace(/\D/g,''),10):0);
       },0);
-      html+=`<tr class="seg-row"><td colspan="5">Segment ${seg} — ~${(segSecs/60).toFixed(1)} min</td></tr>`;
+      html+=`<tr class="seg-row"><td colspan="4">Segment ${seg} — ~${(segSecs/60).toFixed(1)} min</td></tr>`;
       lastSeg=seg;
     }
     const voContent = sc.isCode
-      ? `<div class="code-td" contenteditable="true" tabindex="0" data-idx="${i}" data-field="vo" spellcheck="false" onclick="this.focus()" onblur="saveEdit(this)">${esc(sc.vo)}</div>`
-      : `<div contenteditable="true" tabindex="0" data-idx="${i}" data-field="vo" spellcheck="false" onclick="this.focus()" onblur="saveEdit(this)">${esc(sc.vo).replace(/\n/g,'<br>')}</div>`;
+      ? `<div class="code-td" contenteditable="true" data-idx="${i}" data-field="vo" spellcheck="false" onblur="saveEdit(this)">${esc(sc.vo)}</div>`
+      : `<span contenteditable="true" data-idx="${i}" data-field="vo" spellcheck="false" onblur="saveEdit(this)">${esc(sc.vo).replace(/\n/g,'<br>')}</span>`;
     const inferTag=sc.inferred?` <span style="font-size:9px;color:#f97316;font-family:'DM Mono',monospace">inferred</span>`:'';
-    html+=`<tr class="${sc.rowClass}" style="animation-delay:${i*20}ms" data-idx="${i}">
+    html+=`<tr class="${sc.rowClass}" style="animation-delay:${i*20}ms">
       <td class="c-num">S${String(sc.screenNumber).padStart(2,'0')}</td>
       <td class="c-type"><span class="pill ${sc.pillClass}">${sc.sceneType}</span>${inferTag}</td>
       <td class="c-vo">${voContent}<div class="edit-hint">↵ changes saved automatically · reflected in PPTX export</div></td>
       <td class="c-dur">${esc(sc.duration)}</td>
-      <td class="c-act"><div class="row-btns">
-        <button class="btn-row" title="Add row below" onclick="addRowAfter(${i})">+</button>
-        <button class="btn-row del" title="Delete row" onclick="deleteRow(${i})">✕</button>
-      </div></td>
     </tr>`;
   });
   html+=`</tbody></table></div>`;
