@@ -3,1712 +3,449 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScriptChunk — Video Storyboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<title>ScriptChunk</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 <style>
-/* ── TOKENS ─────────────────────────────────────────────────── */
-:root{
-  --white:#fff;
-  --off:#f8f7f4;--off2:#f2f0eb;--off3:#eceae5;
-  --rule:#e5e2db;--rule2:#d4d0c8;
-  --ink:#181612;--ink2:#47443d;--muted:#96928a;--muted2:#bcb8b0;
-  --blue:#1d4ed8;--blue-d:#1741b8;--blue-l:#eff4ff;--blue-b:#bfdbfe;
-  --green:#15803d;--green-l:#f0fdf4;--green-b:#bbf7d0;
-  --amber:#b45309;--amber-l:#fffbeb;--amber-b:#fde68a;
-  --violet:#6d28d9;--violet-l:#f5f3ff;--violet-b:#ddd6fe;
-  --teal:#0f766e;--teal-l:#f0fdfa;
-  --rose:#be123c;--rose-l:#fff1f2;
-  --slate:#475569;--slate-l:#f8fafc;
-  --purple:#7e22ce;--purple-l:#fdf4ff;
-  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --sh2:0 4px 20px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
-  --sh3:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{font-size:14px;}
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--off);
-  color:var(--ink);
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-}
-
-/* ── STATUS RIBBON ──────────────────────────────────────────── */
-#ribbon{
-  background:#0f0e0c;
-  color:#8a877f;
-  font-family:'DM Mono',monospace;
-  font-size:10.5px;
-  padding:5px 20px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-shrink:0;
-  letter-spacing:.3px;
-}
-.dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;animation:blink 1.3s ease-in-out infinite;}
-.dot.ok{background:#22c55e;animation:none;}
-.dot.err{background:#ef4444;animation:none;}
+:root{--bg:#0d0d0f;--surface:#13131a;--surface2:#1a1a24;--border:#2a2a3a;--ink:#e8e4f0;--muted:#6b6880;--red:#e05c6f;--green:#4ec994;--purple:#a855f7;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+#bar{background:#0a0a0d;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 24px;display:flex;align-items:center;gap:10px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--purple);animation:blink 1.2s infinite;flex-shrink:0;}
+.dot.ready{background:var(--green);animation:none;}
+.dot.error{background:var(--red);animation:none;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
-/* ── SHELL ──────────────────────────────────────────────────── */
-.shell{
-  display:grid;
-  grid-template-columns:400px 1fr;
-  grid-template-rows:auto 1fr;
-  height:calc(100vh - 27px);
-}
-
-/* ── TOPBAR ─────────────────────────────────────────────────── */
-.topbar{
-  grid-column:1/-1;
-  background:var(--white);
-  border-bottom:1px solid var(--rule);
-  padding:0 24px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  height:52px;
-  flex-shrink:0;
-}
-.brand{display:flex;align-items:center;gap:12px;}
-.brand-logo{
-  font-family:'Playfair Display',serif;
-  font-size:21px;
-  font-weight:800;
-  letter-spacing:-.6px;
-  color:var(--ink);
-}
-.brand-logo em{font-style:normal;color:var(--blue);}
-.brand-tag{
-  font-family:'DM Mono',monospace;
-  font-size:9px;
-  font-weight:500;
-  background:var(--off2);
-  color:var(--muted);
-  border:1px solid var(--rule);
-  padding:2px 8px;
-  border-radius:20px;
-  letter-spacing:.8px;
-  text-transform:uppercase;
-}
-.brand-tag.live{background:var(--blue);color:#fff;border-color:var(--blue);}
-.topbar-right{
-  font-family:'DM Mono',monospace;
-  font-size:10px;
-  color:var(--muted2);
-  letter-spacing:.2px;
-}
-
-/* ── LEFT PANEL ─────────────────────────────────────────────── */
-.left{
-  background:var(--white);
-  border-right:1px solid var(--rule);
-  display:flex;
-  flex-direction:column;
-  overflow:hidden; /* kills the scrollbar bleed */
-}
-.left-scroll{
-  flex:1;
-  overflow-y:auto;
-  padding:20px 20px 0;
-  display:flex;
-  flex-direction:column;
-  gap:0;
-  /* Custom thin scrollbar */
-  scrollbar-width:thin;
-  scrollbar-color:var(--rule2) transparent;
-}
-.left-scroll::-webkit-scrollbar{width:4px;}
-.left-scroll::-webkit-scrollbar-track{background:transparent;}
-.left-scroll::-webkit-scrollbar-thumb{background:var(--rule2);border-radius:4px;}
-
-/* ── STEP HEADERS ───────────────────────────────────────────── */
-.step-header{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:12px;
-  margin-top:24px;
-}
-.step-header:first-child{margin-top:0;}
-.step-badge{
-  width:22px;height:22px;
-  border-radius:50%;
-  background:var(--blue);
-  color:#fff;
-  font-family:'DM Mono',monospace;
-  font-size:10px;
-  font-weight:500;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.step-badge.done{background:var(--green);}
-.step-label{
-  font-size:11px;
-  font-weight:700;
-  color:var(--ink);
-  letter-spacing:.5px;
-  text-transform:uppercase;
-}
-.step-optional{
-  font-size:10px;
-  font-weight:400;
-  color:var(--muted);
-  text-transform:none;
-  letter-spacing:0;
-  margin-left:2px;
-}
-.step-divider{height:1px;background:var(--rule);margin:20px 0 0;}
-
-/* ── TEMPLATE BANNER ────────────────────────────────────────── */
-.tpl-banner{
-  background:var(--blue-l);
-  border:1px solid var(--blue-b);
-  border-radius:10px;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.tpl-title{font-weight:600;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;}
-.tpl-sub{font-size:11.5px;color:var(--ink2);line-height:1.65;}
-.tpl-checklist{display:flex;flex-direction:column;gap:6px;}
-.tpl-row{display:flex;align-items:flex-start;gap:9px;font-size:11.5px;color:var(--ink2);line-height:1.5;}
-.tpl-num{
-  width:18px;height:18px;border-radius:50%;
-  background:var(--blue);color:#fff;
-  font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-}
-.btn-tpl{
-  background:var(--blue);
-  color:#fff;
-  border:none;
-  padding:10px 16px;
-  border-radius:8px;
-  font-family:'DM Sans',sans-serif;
-  font-weight:600;
-  font-size:12.5px;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:all .15s;
-  box-shadow:var(--sh);
-  width:100%;
-}
-.btn-tpl:hover{background:var(--blue-d);box-shadow:var(--sh2);transform:translateY(-1px);}
-
-/* ── UPLOAD ZONES ───────────────────────────────────────────── */
-.upload-zone{
-  border:1.5px dashed var(--rule2);
-  border-radius:10px;
-  padding:16px;
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  cursor:pointer;
-  transition:all .15s;
-  text-align:center;
-  position:relative;
-  background:var(--off);
-}
-.upload-zone:hover,.upload-zone.drag{
-  border-color:var(--blue);
-  background:var(--blue-l);
-}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.uz-icon{font-size:22px;line-height:1;margin-bottom:2px;}
-.uz-title{font-size:13px;font-weight:600;color:var(--ink);}
-.uz-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
-.uz-file{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--green);font-weight:500;margin-top:2px;}
-
-/* PPTX upload zone — neutral style matching docx */
-.upload-zone.pptx-zone{
-  border-color:var(--rule2);
-  background:var(--off);
-}
-.upload-zone.pptx-zone:hover,.upload-zone.pptx-zone.drag{
-  border-color:var(--violet);
-  background:var(--violet-l);
-}
-.pptx-req{
-  font-family:'DM Mono',monospace;
-  font-size:10px;
-  color:var(--muted);
-  margin-top:6px;
-  line-height:1.7;
-  padding:8px 10px;
-  background:var(--off2);
-  border-radius:6px;
-  border:1px solid var(--rule);
-}
-.pptx-req strong{color:var(--ink2);}
-
-/* ── OR DIVIDER ─────────────────────────────────────────────── */
-.or-divider{
-  display:flex;align-items:center;gap:10px;
-  font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);
-  margin:14px 0;
-}
-.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--rule);}
-
-/* ── TEXTAREA ───────────────────────────────────────────────── */
-.ta-wrap{
-  border:1.5px solid var(--rule2);
-  border-radius:10px;
-  overflow:hidden;
-  transition:border-color .15s,box-shadow .15s;
-  background:var(--white);
-  flex-shrink:0;
-  min-height:0;
-}
-.ta-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,78,216,.09);}
-.ta-top{
-  padding:7px 12px;
-  background:var(--off);
-  border-bottom:1px solid var(--rule);
-  display:flex;justify-content:space-between;
-  font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);
-}
-#wc{color:var(--green);font-weight:500;}
-textarea{
-  border:none;background:transparent;
-  padding:12px;
-  color:var(--ink);
-  font-family:'DM Mono',monospace;font-size:11.5px;line-height:1.85;
-  resize:vertical;outline:none;
-  height:148px;
-  min-height:148px;
-  width:100%;
-  display:block;
-}
-textarea::placeholder{color:var(--muted);opacity:.5;}
-
-/* ── INFER NOTE ─────────────────────────────────────────────── */
-.infer-note{
-  background:var(--amber-l);border:1px solid var(--amber-b);
-  border-radius:8px;padding:9px 12px;
-  font-size:11.5px;color:var(--amber);line-height:1.6;
-  display:none;margin-top:8px;
-}
-.infer-note.show{display:block;}
-
-/* ── SETTINGS ───────────────────────────────────────────────── */
-.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.field{display:flex;flex-direction:column;gap:5px;}
-.fl{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);}
-select{
-  background:var(--off);border:1.5px solid var(--rule2);color:var(--ink);
-  padding:8px 28px 8px 10px;
-  font-family:'DM Sans',sans-serif;font-size:12px;
-  border-radius:8px;outline:none;cursor:pointer;transition:border-color .15s;
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2396928a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 10px center;
-}
-select:focus{border-color:var(--blue);}
-
-/* ── LEFT FOOTER (Run button pinned) ───────────────────────── */
-.left-footer{
-  padding:16px 20px;
-  border-top:1px solid var(--rule);
-  background:var(--white);
-  flex-shrink:0;
-}
-.btn-run{
-  background:var(--blue);color:#fff;border:none;
-  padding:13px 20px;width:100%;
-  font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;
-  border-radius:10px;cursor:pointer;
-  transition:all .18s;
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  box-shadow:0 2px 8px rgba(29,78,216,.30);
-  letter-spacing:.1px;
-}
-.btn-run:hover:not(:disabled){
-  background:var(--blue-d);
-  box-shadow:0 4px 16px rgba(29,78,216,.40);
-  transform:translateY(-1px);
-}
-.btn-run:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
-.btn-run-sub{font-family:'DM Mono',monospace;font-size:9px;font-weight:400;opacity:.7;margin-top:1px;}
-
-/* ── RIGHT PANEL ────────────────────────────────────────────── */
-.right{
-  background:var(--off);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-
-/* Output toolbar (shown after generate) */
-.out-tb{
-  background:var(--white);
-  border-bottom:1px solid var(--rule);
-  padding:10px 24px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  flex-shrink:0;
-}
-.out-meta{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted);}
-.out-meta strong{color:var(--ink);font-weight:600;}
-.tb-r{display:flex;align-items:center;gap:8px;}
-.vtog{display:flex;background:var(--off);border:1.5px solid var(--rule2);border-radius:8px;padding:3px;gap:2px;}
-.vb{
-  padding:5px 13px;
-  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
-  border:none;background:transparent;cursor:pointer;border-radius:6px;
-  color:var(--muted);transition:all .15s;
-  display:flex;align-items:center;gap:5px;
-}
-.vb.on{background:var(--white);color:var(--ink);box-shadow:var(--sh);}
-.btn-ex{
-  padding:6px 13px;
-  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
-  background:var(--white);border:1.5px solid var(--rule2);
-  color:var(--ink2);border-radius:7px;cursor:pointer;
-  transition:all .15s;display:flex;align-items:center;gap:6px;
-}
-.btn-ex:hover{border-color:var(--blue);color:var(--blue);}
-.out-body{flex:1;overflow-y:auto;padding:24px;}
-
-/* ── WELCOME STATE (replaces blue void) ─────────────────────── */
-.welcome{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:40px;
-  gap:40px;
-}
-.welcome-hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;}
-.welcome-icon{
-  width:56px;height:56px;
-  background:var(--blue);
-  border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 20px rgba(29,78,216,.25);
-  font-size:26px;
-}
-.welcome-title{
-  font-family:'Playfair Display',serif;
-  font-size:22px;font-weight:800;
-  color:var(--ink);letter-spacing:-.3px;
-}
-.welcome-sub{
-  font-size:13px;color:var(--muted);
-  max-width:340px;line-height:1.7;
-  text-align:center;
-}
-/* How-it-works flow */
-.how{
-  display:flex;align-items:center;gap:0;
-  background:var(--white);
-  border:1px solid var(--rule);
-  border-radius:14px;
-  padding:20px 28px;
-  box-shadow:var(--sh);
-  width:100%;max-width:600px;
-}
-.how-step{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  text-align:center;flex:1;padding:0 12px;
-}
-.how-icon{
-  width:38px;height:38px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;
-  background:var(--off);border:1px solid var(--rule);
-}
-.how-label{font-size:11.5px;font-weight:600;color:var(--ink);}
-.how-sub{font-size:10.5px;color:var(--muted);line-height:1.5;}
-.how-arrow{color:var(--rule2);font-size:18px;flex-shrink:0;margin-top:-8px;}
-/* Scene-type legend */
-.legend{
-  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
-  width:100%;max-width:600px;
-}
-.legend-item{
-  display:flex;align-items:center;gap:5px;
-  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
-  padding:4px 9px;border-radius:20px;
-}
-
-/* ── LOADER ─────────────────────────────────────────────────── */
-.ldr{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
-.spin{width:28px;height:28px;border:2.5px solid var(--rule);border-top-color:var(--blue);border-radius:50%;animation:spin .65s linear infinite;}
+.wrap{max-width:1000px;margin:0 auto;padding:24px;}
+h1{font-size:22px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}
+h1 span{color:var(--purple);}
+.sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:24px;}
+.steps-bar{display:flex;margin-bottom:28px;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.step-tab{flex:1;padding:10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);background:var(--surface);border-right:1px solid var(--border);}
+.step-tab:last-child{border-right:none;}
+.step-tab.active{background:var(--purple);color:#fff;}
+.step-tab.done{background:#1a1520;color:var(--green);}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.drop-zone{border:2px dashed var(--border);border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);}
+.drop-zone:hover{border-color:var(--purple);background:#1e1828;}
+.drop-zone.loaded{border-color:var(--green);border-style:solid;background:#0f1a14;}
+.dz-icon{font-size:28px;margin-bottom:8px;}
+.dz-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+.dz-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);font-weight:600;margin-top:4px;word-break:break-all;}
+.btn{background:var(--purple);color:#fff;border:none;padding:11px 22px;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:4px;}
+.btn:hover{background:#9333ea;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.green{background:#1a6b3a;}
+.btn-sm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:3px;cursor:pointer;}
+.btn-sm:hover{border-color:var(--purple);color:var(--purple);}
+.btn-sm.danger:hover{border-color:var(--red);color:var(--red);}
+.chunks-list{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
+.chunk-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:6px;overflow:hidden;}
+.chunk-card-head{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.chunk-num{width:24px;height:24px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;}
+.chunk-title-input{flex:1;background:transparent;border:none;color:var(--ink);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;outline:none;}
+.chunk-actions{display:flex;gap:6px;flex-shrink:0;}
+.chunk-body{padding:12px 14px;}
+.chunk-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;padding:10px;border-radius:4px;outline:none;resize:vertical;min-height:80px;}
+.chunk-textarea:focus{border-color:var(--purple);}
+.action-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--border);}
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;gap:16px;}
+.spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.ldr-msg{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);animation:br 1.4s ease-in-out infinite;}
-@keyframes br{0%,100%{opacity:.3}50%{opacity:1}}
-
-/* ── INFER BANNER ───────────────────────────────────────────── */
-.infer-banner{
-  background:var(--amber-l);border:1px solid var(--amber-b);
-  border-radius:8px;padding:11px 14px;margin-bottom:16px;
-  font-size:12px;color:var(--amber);line-height:1.6;
-}
-.infer-banner strong{font-weight:600;}
-
-/* ── TYPE PILLS ─────────────────────────────────────────────── */
-.pill{display:inline-flex;align-items:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
-.p-hook   {background:var(--amber-l); color:var(--amber);}
-.p-obj    {background:var(--slate-l); color:var(--slate);}
-.p-concept{background:var(--blue-l);  color:var(--blue);}
-.p-code   {background:var(--purple-l);color:var(--purple);}
-.p-example{background:var(--green-l); color:var(--green);}
-.p-check  {background:var(--violet-l);color:var(--violet);}
-.p-summary{background:var(--teal-l);  color:var(--teal);}
-.p-cta    {background:var(--rose-l);  color:var(--rose);}
-.p-infer  {background:#fff7ed;        color:#c2410c;}
-
-/* ── TABLE VIEW ─────────────────────────────────────────────── */
-.tbl-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:980px;}
-thead tr{background:var(--ink);}
-thead th{padding:11px 13px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:#ccc9bf;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.07);}
-thead th:last-child{border-right:none;}
-tbody tr{border-bottom:1px solid var(--rule);animation:fadeR .22s ease both;}
-@keyframes fadeR{from{opacity:0;transform:translateX(3px)}to{opacity:1;transform:none}}
-tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:var(--off);}
-tbody td{padding:11px 13px;vertical-align:top;border-right:1px solid var(--rule);line-height:1.65;color:var(--ink2);}
-tbody td:last-child{border-right:none;}
-.c-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);white-space:nowrap;width:52px;}
-.c-type{width:90px;}
-.c-ost{font-weight:600;color:var(--ink);font-size:12.5px;min-width:150px;max-width:190px;}
-.c-vo{min-width:220px;max-width:270px;font-size:11.5px;font-family:'DM Mono',monospace;line-height:1.75;}
-.c-vis{min-width:160px;max-width:200px;font-size:12px;font-style:italic;}
-.c-dur{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted);white-space:nowrap;width:60px;}
-.c-int{min-width:160px;font-size:11.5px;}
-tr.rt-hook    td:first-child{border-left:3px solid #f59e0b;padding-left:10px;}
-tr.rt-obj     td:first-child{border-left:3px solid var(--slate);padding-left:10px;}
-tr.rt-concept td:first-child{border-left:3px solid var(--blue);padding-left:10px;}
-tr.rt-code    td:first-child{border-left:3px solid var(--purple);padding-left:10px;}
-tr.rt-example td:first-child{border-left:3px solid var(--green);padding-left:10px;}
-tr.rt-check   td:first-child{border-left:3px solid var(--violet);padding-left:10px;}
-tr.rt-summary td:first-child{border-left:3px solid var(--teal);padding-left:10px;}
-tr.rt-cta     td:first-child{border-left:3px solid var(--rose);padding-left:10px;}
-tr.rt-infer   td:first-child{border-left:3px solid #fb923c;padding-left:10px;}
-tr.seg-row td{background:var(--off2);font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:5px 13px;}
-.code-td{background:#1e1b18;color:#d4d0c8;font-family:'DM Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;line-height:1.7;white-space:pre-wrap;}
-
-/* ── CARD VIEW ──────────────────────────────────────────────── */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
-.seg-div{grid-column:1/-1;display:flex;align-items:center;gap:10px;}
-.seg-div-line{flex:1;height:1px;background:var(--rule);}
-.seg-div-lbl{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
-.card{background:var(--white);border:1px solid var(--rule);border-radius:12px;overflow:hidden;box-shadow:var(--sh);animation:cardIn .28s ease both;}
-@keyframes cardIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
-.card-h{padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--rule);gap:9px;}
-.card-hl{display:flex;align-items:center;gap:10px;}
-.card-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#fff;flex-shrink:0;}
-.card-ost{font-weight:700;font-size:13.5px;line-height:1.3;color:var(--ink);margin-bottom:5px;}
-.card-dur{font-family:'DM Mono',monospace;font-size:9.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-top:2px;}
-.card-b{padding:13px 14px;display:flex;flex-direction:column;gap:11px;}
-.cf-lbl{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:4px;}
-.cf-vo{font-size:11.5px;line-height:1.8;color:var(--ink2);background:var(--off);border-left:3px solid var(--rule2);padding:7px 10px;border-radius:0 6px 6px 0;font-family:'DM Mono',monospace;}
-.cf-vis{font-size:12px;line-height:1.65;color:var(--ink2);font-style:italic;}
-.cf-notes{font-size:11.5px;line-height:1.65;color:var(--ink2);background:var(--violet-l);border:1px solid var(--violet-b);padding:8px 10px;border-radius:7px;}
-.code-card{background:#1e1b18;color:#d4d0c8;font-family:'DM Mono',monospace;font-size:11px;padding:9px 11px;border-radius:7px;line-height:1.7;white-space:pre-wrap;}
-.err{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:11.5px;color:#dc2626;line-height:1.75;}
-
-/* ── EDITABLE CELLS ─────────────────────────────────────────── */
-.edit-hint{
-  font-family:'DM Mono',monospace;font-size:9px;color:var(--muted2);
-  padding:3px 6px;background:var(--off);border-top:1px solid var(--rule);
-  display:none;
-}
-td:focus-within .edit-hint{display:block;}
-[contenteditable]{
-  outline:none;
-  border-radius:4px;
-  min-height:1em;
-  transition:background .12s;
-}
-[contenteditable]:focus{
-  background:var(--blue-l);
-  box-shadow:0 0 0 2px var(--blue-b);
-  border-radius:4px;
-  padding:2px 4px;
-}
-.spacer{height:20px;flex-shrink:0;}
-
-@media(max-width:900px){
-  .shell{grid-template-columns:1fr;}
-  .right{min-height:60vh;}
-  .sg{grid-template-columns:1fr;}
-}
+.lmsg{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+.err{background:#1a0d10;border:1px solid var(--red);padding:16px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);line-height:1.8;white-space:pre-wrap;}
+.success{background:#0f1a14;border:1px solid var(--green);padding:28px;border-radius:4px;text-align:center;}
+.hidden{display:none!important;}
 </style>
 </head>
 <body>
-
-<div id="ribbon"><div class="dot" id="dot"></div><span id="rmsg">Loading Pyodide — Python 3.11 in WebAssembly, please wait ~10 s…</span></div>
-
-<div class="shell">
-
-  <!-- ── TOPBAR ─────────────────────────────────────────────── -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-logo">Script<em>Chunk</em></div>
-      <div class="brand-tag">Pyodide · Offline</div>
-    </div>
-    <div class="topbar-right">Video production storyboard &nbsp;·&nbsp; one screen per visual moment &nbsp;·&nbsp; .docx or paste</div>
+<div id="bar"><div class="dot" id="dot"></div><span id="bartxt">Loading Python + python-pptx (~15s)...</span></div>
+<div class="wrap">
+  <h1>Script<span>Chunk</span></h1>
+  <div class="sub">Coursera Storyboard → PPT · Pyodide · No API · No Server</div>
+  <div class="steps-bar">
+    <div class="step-tab active" id="tab1">① Upload Files</div>
+    <div class="step-tab" id="tab2">② Review Chunks</div>
+    <div class="step-tab" id="tab3">③ Export PPT</div>
   </div>
-
-  <!-- ── LEFT PANEL ─────────────────────────────────────────── -->
-  <div class="left">
-    <div class="left-scroll">
-
-      <!-- STEP 1 -->
-      <div class="step-header" style="margin-top:0">
-        <div class="step-badge">1</div>
-        <div class="step-label">Get the Template</div>
+  <div id="step1">
+    <div class="upload-grid">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px">Script (.docx or .txt)</div>
+        <input type="file" id="scriptFile" accept=".docx,.txt" style="display:none">
+        <div class="drop-zone" id="scriptZone"><div class="dz-icon">📄</div><div class="dz-label">Click to upload script</div><div class="dz-name" id="scriptName">.docx or .txt</div></div>
       </div>
-      <div class="tpl-banner">
-        <div class="tpl-title">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Script Template (.docx)
-        </div>
-        <div class="tpl-sub">Write your script in this Word template for the most accurate storyboard output. Includes all 7 section labels with instructions and examples.</div>
-        <div class="tpl-checklist">
-          <div class="tpl-row"><div class="tpl-num">1</div><span>Download and open the template</span></div>
-          <div class="tpl-row"><div class="tpl-num">2</div><span>Fill in each labelled section with your script</span></div>
-          <div class="tpl-row"><div class="tpl-num">3</div><span>Save as .docx and upload below</span></div>
-        </div>
-        <button class="btn-tpl" onclick="downloadTemplate()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Word Template
-        </button>
-      </div>
-
-      <div class="step-divider"></div>
-
-      <!-- STEP 2 -->
-      <div class="step-header">
-        <div class="step-badge">2</div>
-        <div class="step-label">Upload or Paste Script</div>
-      </div>
-
-      <div class="upload-zone" id="dz">
-        <input type="file" id="fi" accept=".docx,.txt" onchange="handleFile(this.files[0])">
-        <div class="uz-icon">📄</div>
-        <div class="uz-title">Drop completed .docx or .txt</div>
-        <div class="uz-sub">or click to browse</div>
-        <div class="uz-file" id="fname"></div>
-      </div>
-
-      <div class="or-divider">or paste text directly</div>
-
-      <div class="ta-wrap">
-        <div class="ta-top"><span>Paste script / transcript</span><span id="wc">0 words</span></div>
-        <textarea id="ta" placeholder="Hook (SME on camera; b-roll...)&#10;Welcome back! Have you ever...&#10;&#10;Paste script with section labels for best results.&#10;Works on plain text too — ScriptChunk will infer&#10;structure from content patterns."></textarea>
-      </div>
-
-      <div class="infer-note" id="inferNote">
-        ⚠ No section labels detected — ScriptChunk will infer scene types from content patterns. Results will be good but less precise than using the template labels.
-      </div>
-
-      <div class="step-divider"></div>
-
-      <!-- STEP 3 -->
-      <div class="step-header">
-        <div class="step-badge">3</div>
-        <div class="step-label">Upload PPTX Template <span class="step-optional">(optional)</span></div>
-      </div>
-
-      <div class="upload-zone pptx-zone" id="pptxDz">
-        <input type="file" id="pptxFi" accept=".pptx" onchange="handlePptx(this.files[0])">
-        <div class="uz-icon">📊</div>
-        <div class="uz-title">Drop your .pptx storyboard template</div>
-        <div class="uz-sub">ScriptChunk fills one slide per screen</div>
-        <div class="uz-file" id="pptxName"></div>
-      </div>
-      <div class="pptx-req">
-        Template needs: <strong>Title</strong> bar · <strong>Slide #</strong> · <strong>Audio Transcript</strong> area · right-side <strong>Interaction</strong> &amp; <strong>Media</strong> boxes
-      </div>
-
-      <div class="step-divider"></div>
-
-      <!-- STEP 4 — Video Title -->
-      <div class="step-header">
-        <div class="step-badge">4</div>
-        <div class="step-label">Video Title</div>
-      </div>
-      <div class="field">
-        <div class="fl">Title shown on every slide</div>
-        <input type="text" id="videoTitle"
-          placeholder="e.g. Lesson 1 Loading Data with pandas"
-          style="background:var(--off);border:1.5px solid var(--rule2);color:var(--ink);
-                 padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:12.5px;
-                 border-radius:8px;outline:none;width:100%;box-sizing:border-box;transition:border-color .15s;"
-          onfocus="this.style.borderColor='var(--blue)'"
-          onblur="this.style.borderColor='var(--rule2)'">
-      </div>
-
-      <div class="step-divider"></div>
-
-      <!-- SETTINGS -->
-      <div class="step-header">
-        <div class="step-badge" style="background:var(--off2);color:var(--muted);">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-        </div>
-        <div class="step-label">Settings</div>
-      </div>
-      <div class="sg">
-        <div class="field">
-          <div class="fl">Course Type</div>
-          <select id="ct">
-            <option value="technical" selected>Technical / STEM</option>
-            <option value="business">Business / Mgmt</option>
-            <option value="humanities">Humanities / Social</option>
-            <option value="skills">Skills / Vocational</option>
-          </select>
-        </div>
-        <div class="field">
-          <div class="fl">Audience</div>
-          <select id="lv">
-            <option value="beginner">Beginner</option>
-            <option value="intermediate" selected>Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="spacer"></div>
-    </div><!-- /left-scroll -->
-
-    <!-- PINNED GENERATE BUTTON -->
-    <div class="left-footer">
-      <button class="btn-run" id="runBtn" onclick="run()" disabled>
-        <span id="bi">⏳</span>
-        <div>
-          <div id="bt">Waiting for Pyodide…</div>
-          <div class="btn-run-sub" id="bsub">Python 3.11 loading</div>
-        </div>
-      </button>
-    </div>
-  </div><!-- /left -->
-
-  <!-- ── RIGHT PANEL ────────────────────────────────────────── -->
-  <div class="right">
-
-    <!-- Output toolbar — hidden until results arrive -->
-    <div class="out-tb" id="outTb" style="display:none">
-      <div class="out-meta" id="outMeta"></div>
-      <div class="tb-r">
-        <button class="btn-ex" id="btnPptx" onclick="exportPptx()" title="Export as PPTX using uploaded template">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Export PPTX
-        </button>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px">PPT Template (.pptx)</div>
+        <input type="file" id="pptFile" accept=".pptx" style="display:none">
+        <div class="drop-zone" id="pptZone"><div class="dz-icon">📊</div><div class="dz-label">Click to upload template</div><div class="dz-name" id="pptName">.pptx</div></div>
       </div>
     </div>
+    <button class="btn" id="chunkBtn" onclick="doChunk()" disabled>⚡ Chunk Script</button>
+  </div>
+  <div id="step2" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">Edit chunks. Each chunk = one slide.</div>
+      <button class="btn-sm" onclick="addChunk()">+ Add Chunk</button>
+    </div>
+    <div class="chunks-list" id="chunksList"></div>
+    <div class="action-bar">
+      <span id="chunkCount" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)"></span>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn green" onclick="doExport()">Generate PPT →</button>
+      </div>
+    </div>
+  </div>
+  <div id="step3" class="hidden">
+    <div class="loader" id="exportLoader"><div class="spinner"></div><div class="lmsg" id="exportMsg">Building PowerPoint...</div></div>
+    <div id="exportResult" class="hidden"></div>
+  </div>
+</div>
 
-    <!-- Output body -->
-    <div class="out-body" id="outBody">
+<script id="pycode" type="text/x-python">
+import re, json, base64, io, copy
+from pptx import Presentation
+from pptx.oxml.ns import qn
+from lxml import etree
 
-      <!-- WELCOME STATE — replaces the blue void -->
-      <div class="welcome" id="welcomeState">
-
-        <div class="welcome-hero">
-          <div class="welcome-icon">🎬</div>
-          <div class="welcome-title">Production-ready storyboards in seconds</div>
-          <div class="welcome-sub">Upload your video script and ScriptChunk splits it into one screen per visual moment — with scene type, voiceover, and duration for every screen.</div>
-        </div>
-
-        <!-- How it works -->
-        <div class="how">
-          <div class="how-step">
-            <div class="how-icon">📄</div>
-            <div class="how-label">Write Script</div>
-            <div class="how-sub">Use the Word template with section labels</div>
-          </div>
-          <div class="how-arrow">→</div>
-          <div class="how-step">
-            <div class="how-icon">⚡</div>
-            <div class="how-label">Generate</div>
-            <div class="how-sub">Python NLP splits into visual moments</div>
-          </div>
-          <div class="how-arrow">→</div>
-          <div class="how-step">
-            <div class="how-icon">📊</div>
-            <div class="how-label">Export</div>
-            <div class="how-sub">Download as PPTX storyboard or JSON</div>
-          </div>
-        </div>
-
-        <!-- Scene type legend -->
-        <div class="legend">
-          <div class="legend-item p-hook">Hook</div>
-          <div class="legend-item p-obj">Objective</div>
-          <div class="legend-item p-concept">Concept</div>
-          <div class="legend-item p-code">Code</div>
-          <div class="legend-item p-example">Example</div>
-          <div class="legend-item p-check">Check</div>
-          <div class="legend-item p-summary">Summary</div>
-          <div class="legend-item p-cta">CTA</div>
-        </div>
-
-      </div><!-- /welcome -->
-
-    </div><!-- /out-body -->
-  </div><!-- /right -->
-
-</div><!-- /shell -->
-
-<script id="pyCode" type="text/plain">
-import re, json
-
-WPM = 130
-
-def wc(t):   return len(t.split())
-def secs(t): return max(5, round(wc(t) / WPM * 60))
-
-# ─────────────────────────────────────────────────────────────
-# LABEL MAP
-# All accepted section labels → canonical scene type.
-# These are the 7 labels from the Word template.
-# ─────────────────────────────────────────────────────────────
-LABEL_MAP = {
-    'hook':                'Hook',
-    'objective':           'Objective',
-    'objectives':          'Objective',
-    'learning objective':  'Objective',
-    'learning objectives': 'Objective',
-    'content':             'Concept',
-    'content (continued)': 'Concept',
-    'example':             'Example',
-    'in-video question':   'Check',
-    'in video question':   'Check',
-    'in-video quiz':       'Check',
-    'quiz':                'Check',
-    'knowledge check':     'Check',
-    'summary':             'Summary',
-    'call to action':      'CTA',
-    'cta':                 'CTA',
-    'outro':               'CTA',
-}
-
-def parse_label(text):
-    """
-    Detects lines like:
-      'Hook (SME on camera; b-roll…)'   → ('Hook', 'SME on camera; b-roll…')
-      'Content'                          → ('Concept', '')
-    Returns (None, '') if not a label line.
-    """
-    t = text.strip()
-    # With production note in parentheses
-    m = re.match(r'^([A-Za-z\s\-\/]+?)\s*\((.+)\)\s*$', t)
-    if m:
-        key = m.group(1).strip().lower()
-        if key in LABEL_MAP:
-            return LABEL_MAP[key], m.group(2).strip()
-    # Bare label
-    key = t.lower()
-    if key in LABEL_MAP:
-        return LABEL_MAP[key], ''
-    return None, ''
-
-# ─────────────────────────────────────────────────────────────
-# CONTENT-PATTERN INFERENCE
-# Used when no label is present (plain text input).
-# Sequence logic: first block → Hook, last block → Summary/CTA,
-# then keyword matching for the rest.
-# Every inferred screen gets flagged with inferredType=True
-# so the UI can show a "review recommended" warning.
-# ─────────────────────────────────────────────────────────────
-def infer_type(text, idx, total):
-    t = text.lower()
-    if idx == 0:
-        return 'Hook'
-    if idx >= total - 1:
-        return 'Summary'
-    if any(w in t for w in ['by the end','you will be able','learning objective']):
-        return 'Objective'
-    if any(w in t for w in ["let's move on","that's all for","now that you've","next reading","next video","next lesson"]):
-        return 'CTA'
-    if any(w in t for w in ['which of the following','true or false','what would you','if you open','question:']):
-        return 'Check'
-    if any(w in t for w in ['for example','for instance','a client','real-world','case study','imagine','scenario']):
-        return 'Example'
-    return 'Concept'
-
-# ─────────────────────────────────────────────────────────────
-# CODE BLOCK DETECTOR
-# Only fires on actual executable code lines, not prose that
-# merely mentions code methods like df.head() or sep=
-# ─────────────────────────────────────────────────────────────
-CODE_RE = re.compile(
-    r'(^import\s|^from\s+\w+\s+import|^df\s*=\s*pd\.|^df\s*=\s*\w+\.read|'
-    r'^pd\.\w+\(|^df\.\w+\s*=)',
-    re.MULTILINE | re.IGNORECASE
-)
-def is_code(text):
-    """True when a block contains actual runnable code lines (needs splitting or is pure code)."""
-    lines = [l.strip() for l in text.strip().split('\n') if l.strip()]
-    # Strip bullet prefixes before checking — bullet items are never code
-    lines = [re.sub(r'^[·•\-\*]\s*', '', l) for l in lines]
-    # Also check double-space-separated inline segments
-    all_parts = []
-    for l in lines:
-        parts = re.split(r'\s{2,}', l)
-        all_parts.extend(p.strip() for p in parts if p.strip())
-    code_count = sum(1 for p in all_parts if CODE_RE.match(p) or re.match(r'^df\s*=\s*\w', p))
-    return code_count >= 1
-
-def split_inline_code(text):
-    """Split a paragraph containing mixed prose + code into (is_code, text) tuples.
-    Handles both newline-separated and double-space-separated inline code."""
-    # First split on newlines to get individual lines
-    raw_lines = [l.strip() for l in text.split('\n') if l.strip()]
-    
-    # For single-line blobs like "prose  import x  df=y", also split on 2+ spaces
-    # when the result looks like code
-    lines = []
-    for l in raw_lines:
-        parts = re.split(r'\s{2,}', l)
-        if len(parts) > 1:
-            lines.extend(p.strip() for p in parts if p.strip())
+def do_chunk(script):
+    lines = [l.strip() for l in script.split('\n') if l.strip()]
+    def split_sentences(text):
+        parts = re.split(r'(?<=[.!?])\s+', text.strip())
+        return [p.strip() for p in parts if p.strip()]
+    sentences = []
+    for line in lines:
+        sentences.extend(split_sentences(line))
+    if not sentences:
+        return json.dumps([])
+    BREAKS = re.compile(
+        r'^(so|now|next|first|second|third|finally|lastly|moving on|'
+        r'in this|another|additionally|however|but|on the other hand|'
+        r'in contrast|to summarize|in summary|in conclusion|to recap|'
+        r'let me|consider|think about|imagine|for example|for instance|'
+        r'notice that|remember that|what this means|this means|'
+        r'this is why|the key|the main|the important|the reason)',
+        re.IGNORECASE
+    )
+    def is_break(s):
+        return bool(BREAKS.search(s)) or s.strip().endswith('?')
+    def topic_shift(prev, curr):
+        if is_break(curr): return True
+        STOP = {'the','a','an','is','are','in','of','to','and','it','this','that','we','you'}
+        pw = set(prev.lower().split()[:5]) - STOP
+        cw = set(curr.lower().split()[:5]) - STOP
+        return len(pw) > 1 and len(pw & cw) == 0
+    groups, cur = [], [sentences[0]]
+    for i in range(1, len(sentences)):
+        if topic_shift(sentences[i-1], sentences[i]):
+            groups.append(' '.join(cur))
+            cur = [sentences[i]]
         else:
-            lines.append(l)
-    
-    segments = []
-    for l in lines:
-        lc = bool(CODE_RE.match(l)) or bool(re.match(r'^df\s*=\s*\w', l))
-        segments.append((lc, l))
-    
-    # Merge consecutive same-type segments
-    merged = []
-    for lc, l in segments:
-        if merged and merged[-1][0] == lc:
-            merged[-1] = (lc, merged[-1][1] + '\n' + l)
-        else:
-            merged.append([lc, l])
-    return merged
+            cur.append(sentences[i])
+    if cur:
+        groups.append(' '.join(cur))
+    result = []
+    for idx, text in enumerate(groups):
+        words = [w for w in text.split() if len(w) > 3][:6]
+        title = ' '.join(words).rstrip('.,;:') or ('Slide ' + str(idx+1))
+        result.append({'title': title, 'text': text})
+    return json.dumps(result)
 
-# ─────────────────────────────────────────────────────────────
-# SENTENCE SPLITTER
-# ─────────────────────────────────────────────────────────────
-def split_sentences(text):
-    parts = re.split(r'(?<=[.!?])\s+(?=[A-Z"\'])', text.strip())
-    return [p.strip() for p in parts if p.strip()]
+def build_ppt(ppt_data, chunks_json, doc_title):
+    chunks = json.loads(chunks_json)
+    prs = Presentation(io.BytesIO(ppt_data))
+    if not prs.slides:
+        raise Exception('Template has no slides')
+    tpl    = prs.slides[0]
+    layout = tpl.slide_layout
 
-# ─────────────────────────────────────────────────────────────
-# VISUAL SHIFT DETECTOR
-# Sentences that introduce a new visual always get own screen.
-# ─────────────────────────────────────────────────────────────
-SHIFT = re.compile(
-    r"\b(here'?s where|here'?s how|for example|for instance|"
-    r"that'?s why|this means|in other words|consider this|"
-    r"let me show|let'?s look|here'?s a|look at this|"
-    r"now let'?s|but the real|the key (point|secret|idea)|"
-    r"what this (means|shows)|notice that|you can see)\b",
-    re.IGNORECASE
-)
-def triggers_new_screen(s):
-    return bool(SHIFT.search(s))
+    # Exact shape names from template debug:
+    # TextBox 5  -> Title value
+    # TextBox 4  -> Slide number
+    # Transcript -> injected via raw XML into Audio Transcript area
+    # EMU positions from debug:
+    # Rectangle 29 (transcript container): l=211138 t=4800600 w=8247062 h=1600200
+    # TextBox 13  (Audio Transcript label): t=4904601 h=276999 -> bottom=5181600
+    # Content box: l=211138 t=5181600 w=8247062 h=1219200
 
-# ─────────────────────────────────────────────────────────────
-# OST GENERATOR — 5-10 word on-screen headline
-# ─────────────────────────────────────────────────────────────
-FILLER = re.compile(
-    r'^(so[,.]?\s*let\'?s\s*(break it down|explore|look)|'
-    r'now[,.]?\s*let\'?s|moving on[,.]?|next[,.]?\s*|'
-    r'welcome back[!,.]?\s*|here\'?s where [a-z]+ shines[:\.]?\s*|'
-    r'but the real secret[^.]*[.:]\s*|for example[,:]?\s*|'
-    r"here'?s a small [a-z]+ moment[:\s]*|"
-    r'once your data is loaded[,]?\s*)',
-    re.IGNORECASE
-)
-def make_ost(vo, stype):
-    if stype == 'Objective': return 'By the end of this video, you will be able to:'
-    if stype == 'CTA':       return "What's Next"
-    if stype == 'Code':
-        m = re.search(r'(pd\.\w+\(|df\.\w+\(|import \w+|df\s*=\s*\w+)', vo)
-        if m: return (m.group(0).rstrip('(') + '()') if '(' in m.group(0) else m.group(0)
-        return 'Code: ' + vo.split('\n')[0][:40]
-    if stype == 'Check':
-        q = vo.split('\n')[0].strip()
-        words = q.split()[:10]
-        return ' '.join(words).rstrip('?') + '?'
-    clean = FILLER.sub('', vo.strip()).strip()
-    clean = re.sub(r'^(but |and |so |that |this |these |those )', '', clean, flags=re.I)
-    words = [w for w in clean.split() if len(w) > 1][:8]
-    ost   = ' '.join(words).rstrip('.,;:—–')
-    ost   = re.sub(r'\s+(and|or|but|the|a|an|in|of|to|is|are|that|with|where|which)$', '', ost, re.I)
-    return ost if ost else stype
+    TRANSCRIPT_L = 211138
+    TRANSCRIPT_T = 5181600
+    TRANSCRIPT_W = 8247062
+    TRANSCRIPT_H = 1219200
 
-# ─────────────────────────────────────────────────────────────
-# VISUAL NOTES — author's prod note always wins, else inferred
-# ─────────────────────────────────────────────────────────────
-def make_visual(vo, stype, prod_note='', course_type='technical'):
-    if prod_note: return prod_note
-    if stype == 'Code':    return 'Screen recording — code types live in notebook; output visible below'
-    if stype == 'Objective': return 'Branded slide — animated checklist, items build one by one'
-    if stype == 'Check':   return 'On-screen MCQ widget — 4 options displayed, learner selects before continuing'
-    if stype == 'Summary': return 'Summary slide — key flow graphic or bullet recap'
-    if stype == 'CTA':     return 'SME on camera — next-item card or course nav graphic overlay'
-    if stype == 'Hook':
-        t = vo.lower()
-        if any(w in t for w in ['have you ever','sound familiar','imagine','what if']):
-            return 'SME on camera — direct address to viewer'
-        return 'B-roll — topic-relevant imagery supporting the story'
-    t = vo.lower()
-    if re.search(r'\bstep[s]?|phase[s]?|process|workflow|pipeline|sequence\b', t):
-        return 'Numbered step diagram or flowchart'
-    if re.search(r'\b\d+[\d,]*\s*(records|rows|lines|percent|%|files|columns|regions)\b', t):
-        return 'Animated stat callout — key number highlighted'
-    if re.search(r'\bcompar|contrast|versus|vs\.?|difference|before.after|instead of\b', t):
-        return 'Split-screen comparison graphic'
-    if re.search(r'\bdefin|means|is called|known as|refers to\b', t):
-        return 'Animated definition card — term + short meaning'
-    if re.search(r'\bclient|customer|real.world|case study|story|career\b', t):
-        return 'Scenario card or illustrative callout — real-world context'
-    if re.search(r'\bparameter[s]?|setting[s]?|option[s]?|argument[s]?\b', t):
-        return 'Annotated graphic — parameter names with short descriptions'
-    if re.search(r'\bdataframe|structure|column[s]?|row[s]?|table|grid\b', t):
-        return 'Animated DataFrame visual — rows and columns labelled'
-    fallbacks = {'technical':'Annotated diagram or labelled data/code graphic','business':'Infographic or business model visual','humanities':'Contextual photograph or timeline graphic','skills':'Instructor demo or illustrated step guide'}
-    return fallbacks.get(course_type, 'Supporting graphic or text overlay')
-
-# ─────────────────────────────────────────────────────────────
-# INTERACTION NOTES
-# ─────────────────────────────────────────────────────────────
-def make_interaction(vo, stype, answer_text=''):
-    if stype == 'Check':
-        # Normalise: options may be newline-separated OR space-separated like "A) x  B) y"
-        normalised = re.sub(r'\s{2,}([A-D][).✅])', r'\n\1', vo)
-        normalised = re.sub(r'([A-D][).✅]\s)', r'\n\1', normalised)
-        lines   = [l.strip() for l in normalised.split('\n') if l.strip()]
-        options = [l for l in lines if re.match(r'^[✅]?[A-D][).✅\s]', l)]
-        result  = f"MCQ · {len(options)} options\n" + '\n'.join(options)
-        if answer_text:
-            clean = re.sub(r'^correct answer[:\s]+', '', answer_text.strip(), flags=re.I)
-            result += f'\n\n✅ Correct answer: {clean}'
-        return result.strip()
-    if stype == 'Objective': return 'No interaction — learner reads objectives as they animate onto screen'
-    if stype == 'Hook':      return 'Optional: pre-lesson poll — "Rate your familiarity (1–5)"'
-    if stype == 'Summary':   return 'End-of-video prompt: "List the 3 things you will apply from this lesson"'
-    if stype == 'CTA':       return 'No interaction — directional link to next item'
-    if stype == 'Code':      return 'Pause prompt: "Try running this in your own notebook"'
-    if stype == 'Example':   return 'Reflection: "Can you think of a similar example in your own work?"'
-    return '—'
-
-# ─────────────────────────────────────────────────────────────
-# TYPE METADATA
-# ─────────────────────────────────────────────────────────────
-META = {
-    'Hook':    {'color':'#f59e0b','pill':'p-hook',   'row':'rt-hook'},
-    'Objective':{'color':'#475569','pill':'p-obj',   'row':'rt-obj'},
-    'Concept': {'color':'#1d4ed8','pill':'p-concept','row':'rt-concept'},
-    'Code':    {'color':'#7e22ce','pill':'p-code',   'row':'rt-code'},
-    'Example': {'color':'#15803d','pill':'p-example','row':'rt-example'},
-    'Check':   {'color':'#6d28d9','pill':'p-check',  'row':'rt-check'},
-    'Summary': {'color':'#0f766e','pill':'p-summary','row':'rt-summary'},
-    'CTA':     {'color':'#be123c','pill':'p-cta',    'row':'rt-cta'},
-}
-def tmeta(t): return META.get(t, {'color':'#f97316','pill':'p-infer','row':'rt-infer'})
-
-# ─────────────────────────────────────────────────────────────
-# SEGMENT GROUPER
-# ─────────────────────────────────────────────────────────────
-def group_segments(screens):
-    SEG_MAX = 6 * WPM
-    segs, cur, cur_wc = [], [], 0
-    for sc in screens:
-        w = sc['wordCount']
-        if cur_wc + w > SEG_MAX and cur:
-            segs.append([s['screenNumber'] for s in cur])
-            cur, cur_wc = [sc], w
-        else:
-            cur.append(sc); cur_wc += w
-    if cur: segs.append([s['screenNumber'] for s in cur])
-    return segs
-
-# ─────────────────────────────────────────────────────────────
-# PARSE DOCX
-# ─────────────────────────────────────────────────────────────
-def parse_docx(b64_str):
-    import base64, io
-    from docx import Document
-    doc = Document(io.BytesIO(base64.b64decode(b64_str)))
-    return [{'text': p.text.strip(), 'style': p.style.name}
-            for p in doc.paragraphs if p.text.strip()]
-
-# ─────────────────────────────────────────────────────────────
-# MASTER FUNCTION
-#
-# Pipeline:
-#  1. Parse input (.docx or plain text)
-#  2. Walk paragraphs:
-#     - Label lines      → set current scene type + prod_note
-#     - Code paragraphs  → one Code screen per block
-#     - Objective bullets→ accumulate into single Objective screen
-#     - Answer lines     → back-patch last Check screen
-#     - Check sections   → whole paragraph as one screen
-#     - Normal VO text   → split into sentences →
-#         each sentence with a visual shift = own screen
-#         short bridging sentences (≤8 words, ends ':') = merge
-#         other short sentences (≤22 words combined) = merge
-#  3. Assign OST / Visual / Duration / Interaction
-#  4. Flag screens from label-less runs as inferred
-#  5. Group into 2-6 min segments
-# ─────────────────────────────────────────────────────────────
-def generate_storyboard(docx_b64, plain_text, course_type, audience):
-
-    # Parse input
-    if docx_b64:
-        items = parse_docx(docx_b64)
-    else:
-        # For plain text, split on blank lines — but also split label from body
-        # when they appear on the same paragraph (label\nbody with no blank line)
-        raw_paras = [p.strip() for p in re.split(r'\n\s*\n', plain_text.strip()) if p.strip()]
-        items = []
-        for para in raw_paras:
-            lines = para.split('\n')
-            first_line = lines[0].strip()
-            ltype, _ = parse_label(first_line)
-            if ltype and len(lines) > 1:
-                # Label on first line — emit label separately
-                items.append({'text': first_line, 'style': 'Normal'})
-                # Emit remaining lines individually (handles bullet lines)
-                for l in lines[1:]:
-                    l = l.strip()
-                    if l:
-                        # Bullet line → List Paragraph style
-                        style_hint = 'List Paragraph' if re.match(r'^[·•\-\*]\s*', l) else 'Normal'
-                        items.append({'text': l, 'style': style_hint})
-            else:
-                items.append({'text': para, 'style': 'Normal'})
-
-    screens      = []
-    cur_type     = None      # None until first label or first paragraph
-    cur_note     = ''
-    obj_bullets  = []
-    answer_text  = ''
-    screen_num   = 0
-    has_labels   = False     # tracks whether any label was found
-    inferred_run = False     # true when current type was inferred, not labelled
-
-    def make_screen(vo_text, stype, prod_note, ans='', inferred=False):
-        nonlocal screen_num
-        screen_num += 1
-        m = tmeta(stype)
-        return {
-            'screenNumber': screen_num,
-            'sceneType':    stype,
-            'ost':          make_ost(vo_text, stype),
-            'vo':           vo_text.strip(),
-            'visuals':      make_visual(vo_text, stype, prod_note, course_type),
-            'duration':     f'~{secs(vo_text)}s',
-            'interaction':  make_interaction(vo_text, stype, ans),
-            'wordCount':    wc(vo_text),
-            'isCode':       stype == 'Code',
-            'inferred':     inferred,
-            'color':        m['color'],
-            'pillClass':    m['pill'] + (' p-infer' if inferred else ''),
-            'rowClass':     m['row']  + (' rt-infer' if inferred else ''),
-        }
-
-    def flush_objectives():
-        nonlocal obj_bullets, cur_note
-        if obj_bullets:
-            # Strip any repeated "By the end of this video..." header bullet
-            bullets = [b for b in obj_bullets
-                       if not re.match(r'^by the end of this video', b, re.I)
-                       and not re.match(r'^·\s*$', b)]
-            if not bullets:
-                bullets = obj_bullets  # fallback
-            vo = 'By the end of this video, you will be able to:\n' + \
-                 '\n'.join(f'• {b}' for b in bullets)
-            screens.append(make_screen(vo, 'Objective', cur_note))
-            obj_bullets = []
-            cur_note = ''
-
-    for idx, item in enumerate(items):
-        text  = item['text']
-        style = item['style']
-
-        # Skip document title headings
-        if 'Heading' in style and len(text.split()) < 8:
-            continue
-
-        # ── Section label? ───────────────────────────────────
-        ltype, lnote = parse_label(text)
-        if ltype:
-            flush_objectives()
-            has_labels   = True
-            cur_type     = ltype
-            cur_note     = lnote
-            inferred_run = False
-            answer_text  = ''
-            continue
-
-        # ── "Correct answer:" → back-patch last Check ────────
-        if re.match(r'^correct answer', text, re.I):
-            answer_text = text
-            for sc in reversed(screens):
-                if sc['sceneType'] == 'Check':
-                    sc['interaction'] = make_interaction(sc['vo'], 'Check', answer_text)
-                    break
-            continue
-
-        # ── Set cur_type if still None (plain text, no labels) ─
-        if cur_type is None:
-            # Count remaining paragraphs to pass total to infer_type
-            remaining = [i for i in items if i['text'].strip() and 'Heading' not in i['style']]
-            total_paras = len(remaining)
-            para_idx    = sum(1 for i in items[:idx] if i['text'].strip() and 'Heading' not in i['style'])
-            cur_type     = infer_type(text, para_idx, total_paras)
-            inferred_run = True
-
-        # ── Objective bullets ────────────────────────────────
-        is_bullet = (style == 'List Paragraph' or
-                     re.match(r'^[·•\-\*]\s*', text) or
-                     (cur_type == 'Objective' and not is_code(text)))
-        if is_bullet and cur_type == 'Objective':
-            # Strip leading bullet character and whitespace
-            clean_bullet = re.sub(r'^[·•\-\*]\s*', '', text).strip()
-            if clean_bullet:  # skip bare bullet lines
-                obj_bullets.append(clean_bullet)
-            continue
-
-        flush_objectives()
-
-        # ── Check → one screen for the whole block (never treat as code) ─
-        if cur_type == 'Check':
-            screens.append(make_screen(text, 'Check', cur_note, answer_text, inferred=inferred_run))
-            cur_note = ''
-            continue
-
-        # ── Code block → split inline code from prose, one Code screen each ─
-        # (never trigger for Objective — bullets may mention method names)
-        if is_code(text) and cur_type != 'Objective':
-            segments = split_inline_code(text)
-            for seg_is_code, seg_text in segments:
-                if seg_is_code:
-                    screens.append(make_screen(seg_text, 'Code', cur_note, inferred=inferred_run))
-                else:
-                    # prose attached to code block — treat as Concept sentence
-                    prose_type = cur_type if cur_type not in ('Check',) else 'Concept'
-                    sents = split_sentences(seg_text) or [seg_text]
-                    for sent in sents:
-                        screens.append(make_screen(sent, prose_type, cur_note, inferred=inferred_run))
-                cur_note = ''
-            continue
-
-        # ── Normal VO: split to sentence-level screens ───────
-        sents = split_sentences(text)
-        # Re-infer type for plain-text paragraphs on every paragraph
-        if inferred_run:
-            remaining    = [i for i in items if i['text'].strip() and 'Heading' not in i['style']]
-            total_paras  = len(remaining)
-            para_idx     = sum(1 for i in items[:idx] if i['text'].strip() and 'Heading' not in i['style'])
-            cur_type     = infer_type(text, para_idx, total_paras)
-
-        for sent in sents:
-            w = wc(sent)
-
-            # Very short bridging phrase ending ':' → merge with previous
-            if w <= 8 and sent.rstrip().endswith(':') and not triggers_new_screen(sent):
-                if screens and screens[-1]['sceneType'] == cur_type:
-                    screens[-1]['vo']        += ' ' + sent
-                    screens[-1]['wordCount'] += w
-                    screens[-1]['duration']   = f'~{secs(screens[-1]["vo"])}s'
-                    screens[-1]['ost']        = make_ost(screens[-1]['vo'], cur_type)
-                else:
-                    screens.append(make_screen(sent, cur_type, cur_note, inferred=inferred_run))
-                    cur_note = ''
-                continue
-
-            # Can merge with previous?
-            can_merge = (
-                screens
-                and screens[-1]['sceneType'] == cur_type
-                and screens[-1]['wordCount'] + w <= 22
-                and not triggers_new_screen(sent)
-                and not is_code(sent)
-            )
-
-            if can_merge:
-                screens[-1]['vo']        += ' ' + sent
-                screens[-1]['wordCount'] += w
-                screens[-1]['duration']   = f'~{secs(screens[-1]["vo"])}s'
-                screens[-1]['ost']        = make_ost(screens[-1]['vo'], cur_type)
-                screens[-1]['visuals']    = make_visual(screens[-1]['vo'], cur_type, '', course_type)
-            else:
-                screens.append(make_screen(sent, cur_type, cur_note, inferred=inferred_run))
-                cur_note = ''
-
-    flush_objectives()
-
-    segments   = group_segments(screens)
-    total_w    = sum(s['wordCount'] for s in screens)
-    total_secs = sum(int(s['duration'].replace('~','').replace('s','')) for s in screens)
-    total_m    = round(total_secs / 60, 1)
-    inferred_count = sum(1 for s in screens if s.get('inferred'))
-
-    return json.dumps({
-        'screens':        screens,
-        'segments':       segments,
-        'totalScreens':   len(screens),
-        'totalMins':      total_m,
-        'totalSegs':      len(segments),
-        'totalWords':     total_w,
-        'hasLabels':      has_labels,
-        'inferredCount':  inferred_count,
-        'courseType':     course_type,
-        'audience':       audience,
-    })
-
-
-# ─────────────────────────────────────────────────────────────
-# PPTX GENERATOR
-# Takes the storyboard JSON + the user's uploaded .pptx template
-# (base64 encoded) and produces a new .pptx with one slide per
-# screen, using the template's exact layout, colours and fonts.
-#
-# The template layout (matched to Keyword_Types_Explained.pptx):
-#   Blue bar top-left   → Title (same text on every slide)
-#   Gray bar top-right  → Slide: N / Total
-#   Main white box      → Visual / graphic description
-#   Top-right blue box  → Interaction / Quiz notes
-#   Bottom-right box    → Media / production notes
-#   Bottom strip        → Audio Transcript (VO text)
-#
-# The function reads the template, duplicates slide 1 for each
-# screen, then writes the content into the correct text boxes
-# by matching their position (since the template has no formal
-# placeholders, we identify boxes by their x/y coordinates).
-# ─────────────────────────────────────────────────────────────
-def generate_pptx(storyboard_json, pptx_b64, script_title):
-    import base64, io, copy, json
-    from pptx import Presentation
-    from pptx.util import Pt, Emu
-    from pptx.dml.color import RGBColor
-    from pptx.enum.text import PP_ALIGN
-    from pptx.oxml.ns import qn
-
-    data         = json.loads(storyboard_json)
-    screens      = data['screens']
-    total        = data['totalScreens']
-    script_title = str(script_title)
-
-    prs = Presentation(io.BytesIO(base64.b64decode(pptx_b64)))
-
-    # 1. Reduce to 1 slide
-    xml_slides = prs.slides._sldIdLst
-    while len(prs.slides) > 1:
-        sldId = xml_slides[-1]
-        rId = sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
-        if rId: prs.part.drop_rel(rId)
-        xml_slides.remove(sldId)
-
-    # 2. Strip everything except the 3 permanent shapes
-    KEEP = {'TextBox 1', 'TextBox 4', 'TextBox 6'}
-    s0 = prs.slides[0]
-    for el in [s._element for s in s0.shapes if s.name not in KEEP]:
-        s0.shapes._spTree.remove(el)
-
-    # 3. Resize TextBox 1 to fill the full blue title bar
-    for s in s0.shapes:
-        if s.name == 'TextBox 1':
-            xfrm = s._element.find('.//' + qn('a:xfrm'))
-            if xfrm is not None:
-                off = xfrm.find(qn('a:off'))
-                ext = xfrm.find(qn('a:ext'))
-                if off is not None:
-                    off.set('x', '602316')
-                    off.set('y', '228600')
-                if ext is not None:
-                    ext.set('cx', '6255684')
-                    ext.set('cy', '381001')
-
-    # 4. Duplicate to total slides
-    def dup(prs):
-        src = prs.slides[0]
-        ns  = prs.slides.add_slide(src.slide_layout)
-        dt  = ns.shapes._spTree
-        for c in list(dt): dt.remove(c)
-        for c in src.shapes._spTree: dt.append(copy.deepcopy(c))
-    for _ in range(total - 1):
-        dup(prs)
-
-    # 5. Fill helper
-    def fill(shape, text, white=False):
-        tf = shape.text_frame
-        orig_size = None; orig_name = None
-        for para in tf.paragraphs:
-            for run in para.runs:
-                if run.font.size and orig_size is None: orig_size = run.font.size
-                if run.font.name and orig_name is None: orig_name = run.font.name
-        tf.clear()
-        p = tf.paragraphs[0]; run = p.add_run()
-        run.text = text
-        run.font.size = orig_size or Pt(12)
-        if orig_name: run.font.name = orig_name
-        run.font.bold = False
-        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if white else RGBColor(0x00, 0x00, 0x00)
-
-    # 6. Fill each slide
-    for i, sc in enumerate(screens):
-        slide = prs.slides[i]
-
-        # Add placeholder boxes below Interaction/Media labels
-        for (left, top, width, height) in [
-            (8610600, 631025, 3352800, 1850000),
-            (8610600, 3222599, 3352800, 3100000),
-        ]:
-            txb = slide.shapes.add_textbox(Emu(left), Emu(top), Emu(width), Emu(height))
-            tf  = txb.text_frame; tf.word_wrap = True
-            run = tf.paragraphs[0].add_run()
-            run.text = 'To be filled by ID'
-            run.font.size = Pt(12); run.font.name = 'Aptos'
-            run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
-
-        # Fill named shapes last so title always wins
+    def set_shape_text(slide, name, value):
         for shape in slide.shapes:
+            if shape.name != name: continue
             if not shape.has_text_frame: continue
-            if shape.name == 'TextBox 1':
-                fill(shape, script_title, white=True)
-            elif shape.name == 'TextBox 4':
-                fill(shape, str(sc['screenNumber']), white=True)
-                shape.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-            elif shape.name == 'TextBox 6':
-                fill(shape, sc['vo'], white=False)
+            all_t = shape.text_frame._txBody.findall('.//' + qn('a:t'))
+            if all_t:
+                all_t[0].text = value
+                for t in all_t[1:]: t.text = ''
+            else:
+                p0 = shape.text_frame.paragraphs[0]._p
+                r_el = etree.SubElement(p0, qn('a:r'))
+                etree.SubElement(r_el, qn('a:rPr'), attrib={'lang':'en-US','dirty':'0'})
+                etree.SubElement(r_el, qn('a:t')).text = value
+            return
+
+    def add_transcript(slide, value):
+        safe = value.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;').replace("'", '&apos;')
+        sp_xml = (
+            '<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<p:nvSpPr>'
+            '<p:cNvPr id="99" name="TranscriptContent"/>'
+            '<p:cNvSpPr txBox="1"><a:spLocks noGrp="1"/></p:cNvSpPr>'
+            '<p:nvPr/>'
+            '</p:nvSpPr>'
+            '<p:spPr bwMode="auto">'
+            '<a:xfrm><a:off x="{l}" y="{t}"/><a:ext cx="{w}" cy="{h}"/></a:xfrm>'
+            '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+            '<a:noFill/>'
+            '<a:ln><a:noFill/></a:ln>'
+            '</p:spPr>'
+            '<p:txBody>'
+            '<a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t">'
+            '<a:normAutofit/>'
+            '</a:bodyPr>'
+            '<a:lstStyle/>'
+            '<a:p>'
+            '<a:pPr><a:defRPr sz="1200" lang="en-US"><a:latin typeface="Aptos"/></a:defRPr></a:pPr>'
+            '<a:r>'
+            '<a:rPr lang="en-US" sz="1200" dirty="0"><a:latin typeface="Aptos"/></a:rPr>'
+            '<a:t>{text}</a:t>'
+            '</a:r></a:p>'
+            '</p:txBody>'
+            '</p:sp>'
+        ).format(l=TRANSCRIPT_L, t=TRANSCRIPT_T, w=TRANSCRIPT_W, h=TRANSCRIPT_H, text=safe)
+        sp_el = etree.fromstring(sp_xml)
+        slide.shapes._spTree.append(sp_el)
+
+    def remove_added_shapes(slide):
+        to_remove = []
+        for shape in slide.shapes:
+            if shape.name == 'TranscriptContent':
+                to_remove.append(shape._element)
+        for el in to_remove:
+            el.getparent().remove(el)
+
+    def clone_tpl(slide):
+        sp = slide.shapes._spTree
+        for c in list(sp): sp.remove(c)
+        for c in tpl.shapes._spTree: sp.append(copy.deepcopy(c))
+
+    # Remove all existing slides
+    sldIdLst = prs.slides._sldIdLst
+    for sldId in list(sldIdLst):
+        rId = sldId.get(qn('r:id'))
+        sldIdLst.remove(sldId)
+        if rId:
+            try: prs.part.drop_rel(rId)
+            except: pass
+
+    # Title slide
+    ts = prs.slides.add_slide(layout)
+    clone_tpl(ts)
+    set_shape_text(ts, 'TextBox 5', doc_title)
+    set_shape_text(ts, 'TextBox 4', 'Title')
+
+    # Content slides
+    for i, chunk in enumerate(chunks):
+        sl = prs.slides.add_slide(layout)
+        clone_tpl(sl)
+        remove_added_shapes(sl)
+        set_shape_text(sl, 'TextBox 5', doc_title)
+        set_shape_text(sl, 'TextBox 4', str(i + 1))
+        add_transcript(sl, chunk.get('text', ''))
 
     out = io.BytesIO()
     prs.save(out)
-    return base64.b64encode(out.getvalue()).decode('utf-8')
+    return base64.b64encode(out.getvalue()).decode()
 </script>
 
 <script>
-const TEMPLATE_B64 = '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';
+let py = null, scriptBytes = null, pptBytes = null, scriptFileName = '', chunks = [];
+const COLORS = ['#a855f7','#4ec994','#5b8dee','#e05c6f','#f5c518','#e0845c','#5cecd4','#c55bee'];
 
-let pyReady=false, py=null, lastData=null, curView='table';
-let docxB64='', plainText='', pptxTemplateB64='', lastStoryboardJson='';
-
-// drag and drop for pptx template
-const pptxDz=document.getElementById('pptxDz');
-pptxDz.addEventListener('dragover',e=>{e.preventDefault();pptxDz.classList.add('drag');});
-pptxDz.addEventListener('dragleave',()=>pptxDz.classList.remove('drag'));
-pptxDz.addEventListener('drop',e=>{e.preventDefault();pptxDz.classList.remove('drag');handlePptx(e.dataTransfer.files[0]);});
-
-function setRibbon(msg,state){
-  document.getElementById('rmsg').textContent=msg;
-  document.getElementById('dot').className='dot'+(state?' '+state:'');
-}
-
-async function boot(){
-  try{
-    setRibbon('Loading Pyodide (Python 3.11 in WebAssembly)…','');
-    py=await loadPyodide();
-    setRibbon('Installing python-docx…','');
+async function initPy() {
+  try {
+    py = await loadPyodide();
+    setBar('', 'Installing python-pptx...');
     await py.loadPackage('micropip');
-    await py.runPythonAsync(`import micropip\nawait micropip.install(['python-docx','python-pptx','lxml'])`);
-    await py.runPythonAsync(document.getElementById('pyCode').textContent);
-    pyReady=true;
-    setRibbon('✓ Python ready · offline · .docx + text · PPTX export · no API key','ok');
-    document.getElementById('runBtn').disabled=false;
-    document.getElementById('bi').textContent='⚡';
-    document.getElementById('bt').textContent='Generate Storyboard';
-  }catch(e){
-    setRibbon('✗ '+e.message,'err');
-    console.error(e);
-  }
+    await py.runPythonAsync("import micropip; await micropip.install('python-pptx')");
+    await py.runPythonAsync(document.getElementById('pycode').textContent);
+    setBar('ready', '✓ Ready — upload your files');
+    checkReady();
+  } catch(e) { setBar('error', '✗ ' + e.message); }
 }
 
-// ── Template download ─────────────────────────────────────────
-function downloadTemplate(){
-  const b=Uint8Array.from(atob(TEMPLATE_B64),c=>c.charCodeAt(0));
-  const blob=new Blob([b],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'Script_Template.docx'});
-  a.click(); URL.revokeObjectURL(a.href);
+function setBar(s, m) {
+  document.getElementById('dot').className = 'dot' + (s ? ' '+s : '');
+  document.getElementById('bartxt').textContent = m;
 }
 
-// ── PPTX template upload ──────────────────────────────────────
-function handlePptx(file){
-  if(!file||!file.name.endsWith('.pptx')){alert('Please upload a .pptx file.');return;}
-  document.getElementById('pptxName').textContent='📊 '+file.name;
-  const r=new FileReader();
-  r.onload=e=>{
-    const a=new Uint8Array(e.target.result);
-    let b=''; a.forEach(x=>b+=String.fromCharCode(x));
-    pptxTemplateB64=btoa(b);
-    document.getElementById('btnPptx').style.borderColor='var(--violet)';
-    document.getElementById('btnPptx').style.color='var(--violet)';
-  };
-  r.readAsArrayBuffer(file);
+function setupZone(zid, iid, cb) {
+  const z = document.getElementById(zid), inp = document.getElementById(iid);
+  z.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', () => { if(inp.files[0]) cb(inp.files[0]); inp.value=''; });
+  z.addEventListener('dragover', e => e.preventDefault());
+  z.addEventListener('drop', e => { e.preventDefault(); if(e.dataTransfer.files[0]) cb(e.dataTransfer.files[0]); });
 }
 
-// ── Export PPTX ───────────────────────────────────────────────
-async function exportPptx(){
-  if(!lastData){alert('Generate a storyboard first.');return;}
-  if(!pptxTemplateB64){alert('Please upload a .pptx template in Step 3 first.');return;}
-  if(!pyReady){alert('Python is still loading.');return;}
-
-  const btn=document.getElementById('btnPptx');
-  btn.textContent='⏳ Generating…';
-  btn.disabled=true;
-
-  try{
-    // Derive script title from first screen's OST or the script label
-    const title = lastData.screens[0]?.vo?.split('\n')[0]?.split('.')?.[0] || 'Video Script';
-    // Use the lesson title: look for a title in the script or fall back
-    const scriptTitle = document.getElementById('videoTitle')?.value.trim() || window._scriptTitle || 'Video Script';
-
-    py.globals.set('_sb_json',    JSON.stringify(lastData));
-    py.globals.set('_pptx_b64',   pptxTemplateB64);
-    py.globals.set('_title',      scriptTitle);
-
-    const b64=await py.runPythonAsync(`
-try:
-    result = generate_pptx(_sb_json, _pptx_b64, _title)
-except Exception as e:
-    import traceback
-    raise RuntimeError(traceback.format_exc())
-result
-`);
-    const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-    const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
-    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'storyboard.pptx'});
-    a.click(); URL.revokeObjectURL(a.href);
-  }catch(e){
-    alert('PPTX generation failed: '+e.message);
-    console.error(e);
-  }
-
-  btn.textContent='Export PPTX';
-  btn.disabled=false;
-}
-
-
-function handleFile(file){
-  if(!file)return;
-  document.getElementById('fname').textContent='📎 '+file.name;
-  if(file.name.endsWith('.txt')){
-    const r=new FileReader();
-    r.onload=e=>{
-      plainText=e.target.result; docxB64='';
-      document.getElementById('ta').value=plainText;
-      updateWC(plainText);
-      checkLabels(plainText);
-    };
-    r.readAsText(file);
-  }else{
-    const r=new FileReader();
-    r.onload=e=>{
-      const a=new Uint8Array(e.target.result);
-      let b=''; a.forEach(x=>b+=String.fromCharCode(x));
-      docxB64=btoa(b); plainText='';
-      document.getElementById('ta').value='';
-      document.getElementById('wc').textContent='(docx loaded)';
-      document.getElementById('inferNote').classList.remove('show');
-    };
-    r.readAsArrayBuffer(file);
-  }
-}
-
-const dz=document.getElementById('dz');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
-
-document.getElementById('ta').addEventListener('input',function(){
-  plainText=this.value; docxB64='';
-  document.getElementById('fname').textContent='';
-  updateWC(this.value);
-  checkLabels(this.value);
+setupZone('scriptZone','scriptFile', async f => {
+  scriptFileName = f.name.replace(/\.[^.]+$/, '');
+  scriptBytes = await f.arrayBuffer();
+  document.getElementById('scriptName').textContent = '✅ ' + f.name;
+  document.getElementById('scriptZone').classList.add('loaded');
+  checkReady();
 });
 
-function updateWC(text){
-  const n=text.trim().split(/\s+/).filter(Boolean).length;
-  document.getElementById('wc').textContent=n.toLocaleString()+' words';
+setupZone('pptZone','pptFile', async f => {
+  pptBytes = await f.arrayBuffer();
+  document.getElementById('pptName').textContent = '✅ ' + f.name;
+  document.getElementById('pptZone').classList.add('loaded');
+  checkReady();
+});
+
+function checkReady() {
+  document.getElementById('chunkBtn').disabled = !(scriptBytes && pptBytes && py);
 }
 
-// Show warning if pasted text has no section labels
-const LABEL_RE=/^\s*(hook|objective|content|example|in-?video question|summary|call to action)\s*[\(\n]/im;
-function checkLabels(text){
-  const hasL=LABEL_RE.test(text);
-  document.getElementById('inferNote').classList.toggle('show',!hasL&&text.trim().length>50);
-}
-
-// ── Derive script title ───────────────────────────────────────
-// Looks for a heading-style line at the top of the script,
-// or the docx filename, or falls back to a generic label.
-function deriveTitle(docxB64, text, data){
-  // If docx was uploaded, use filename if set
-  const fname = document.getElementById('fname').textContent.replace('📎 ','').trim();
-  if(fname && fname.endsWith('.docx')){
-    return fname.replace(/\.docx$/i,'').replace(/_/g,' ');
+async function readDocx(ab) {
+  const bytes = new Uint8Array(ab);
+  const u16=(b,o)=>b[o]|(b[o+1]<<8), u32=(b,o)=>(b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0;
+  const files={};let i=0;
+  while(i<bytes.length-4){
+    if(bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04){
+      const cm=u16(bytes,i+8),cs=u32(bytes,i+18),fnl=u16(bytes,i+26),el=u16(bytes,i+28);
+      const fn=new TextDecoder().decode(bytes.slice(i+30,i+30+fnl));
+      const ds=i+30+fnl+el;
+      files[fn]={cm,data:bytes.slice(ds,ds+cs)};i=ds+cs;
+    }else i++;
   }
-  // Try first line of pasted text if it looks like a title (short, no sentence punctuation)
-  const firstLine = text.split('\n')[0].trim();
-  if(firstLine && firstLine.length < 80 && !firstLine.includes('.') && !firstLine.startsWith('Hook')){
-    return firstLine;
+  const t=files['word/document.xml'];
+  if(!t)throw new Error('Not a valid .docx');
+  let xb;
+  if(t.cm===0){xb=t.data;}
+  else{
+    const ds=new DecompressionStream('deflate-raw'),w=ds.writable.getWriter(),r=ds.readable.getReader();
+    w.write(t.data);w.close();
+    const cks=[];let len=0;
+    while(true){const{done,value}=await r.read();if(done)break;cks.push(value);len+=value.length;}
+    xb=new Uint8Array(len);let off=0;for(const c of cks){xb.set(c,off);off+=c.length;}
   }
-  // Fall back to first screen's OST
-  return data?.screens?.[0]?.ost || 'Video Script';
+  let xml=new TextDecoder().decode(xb);
+  let text=xml.replace(/<\/w:p>/g,'\n').replace(/<\/w:tr>/g,'\n').replace(/<[^>]+>/g,'');
+  return text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+    .replace(/\r\n/g,'\n').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();
 }
 
-// ── Run ───────────────────────────────────────────────────────
-async function run(){
-  const txt=plainText||document.getElementById('ta').value.trim();
-  if(!docxB64&&!txt){alert('Please upload a .docx or paste a script.');return;}
-  if(!pyReady){alert('Python is still loading — please wait.');return;}
-
-  const btn=document.getElementById('runBtn');
-  btn.disabled=true;
-  document.getElementById('bi').textContent='⏳';
-  document.getElementById('bt').textContent='Python chunking…';
-  document.getElementById('outTb').style.display='none';
-  document.getElementById('outBody').innerHTML=
-    `<div class="ldr"><div class="spin"></div><div class="ldr-msg">Splitting into screens — one visual moment per screen…</div></div>`;
-
-  try{
-    py.globals.set('_docx', docxB64);
-    py.globals.set('_text', txt||'');
-    py.globals.set('_ct',   document.getElementById('ct').value);
-    py.globals.set('_lv',   document.getElementById('lv').value);
-    const json=await py.runPythonAsync(`generate_storyboard(_docx,_text,_ct,_lv)`);
-    lastData=JSON.parse(json);
-    // Derive script title from the docx filename or first heading
-    window._scriptTitle = deriveTitle(docxB64, plainText||document.getElementById('ta').value.trim(), lastData);
-    renderOutput(lastData);
-  }catch(e){
-    document.getElementById('outBody').innerHTML=
-      `<div class="err"><b>Python Error:</b><br><br>${e.message}</div>`;
-    console.error(e);
-  }
-  btn.disabled=false;
-  document.getElementById('bi').textContent='⚡';
-  document.getElementById('bt').textContent='Generate Storyboard';
-  document.getElementById('bsub').textContent='one screen per visual moment';
+async function doChunk() {
+  document.getElementById('chunkBtn').disabled = true;
+  document.getElementById('chunkBtn').textContent = '⏳ Chunking...';
+  try {
+    let script = '';
+    const nm = document.getElementById('scriptName').textContent.toLowerCase();
+    if(nm.includes('.docx')){ try{ script=await readDocx(scriptBytes); }catch(e){ script=new TextDecoder().decode(scriptBytes); } }
+    else { script = new TextDecoder().decode(scriptBytes); }
+    py.globals.set('_script', script);
+    const js = await py.runPythonAsync('do_chunk(_script)');
+    chunks = JSON.parse(js);
+    if(!chunks.length) throw new Error('No chunks generated.');
+    renderChunks();
+    goStep(2);
+  } catch(e) { alert('Chunking error: ' + e.message); }
+  document.getElementById('chunkBtn').disabled = false;
+  document.getElementById('chunkBtn').textContent = '⚡ Chunk Script';
 }
 
-// ── Inline edit: sync contenteditable back to lastData ────────
-function saveEdit(el){
-  const idx = parseInt(el.dataset.idx, 10);
-  const field = el.dataset.field;
-  if(!lastData || isNaN(idx)) return;
-  // Get plain text — replace <br> with newline
-  const updated = el.innerHTML
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');
-  lastData.screens[idx][field] = updated.trim();
-}
-
-// ── Render dispatcher ─────────────────────────────────────────
-function renderOutput(data){
-  const w=document.getElementById('welcomeState');
-  if(w)w.style.display='none';
-  document.getElementById('outTb').style.display='flex';
-  const inferMsg = data.inferredCount > 0
-    ? ` · <span style="color:#b45309">⚠ ${data.inferredCount} inferred — use template for best results</span>`
-    : '';
-  document.getElementById('outMeta').innerHTML=
-    `<strong>${data.totalScreens} screens</strong> · ${data.totalSegs} segment${data.totalSegs!==1?'s':''} · ~${data.totalMins} min · ${data.totalWords.toLocaleString()} words${inferMsg}`;
-  renderTable(data);
-}
-
-// ── TABLE VIEW ────────────────────────────────────────────────
-function renderTable(data){
-  const segOf={};
-  data.segments.forEach((seg,si)=>seg.forEach(n=>segOf[n]=si+1));
-
-  let banner='';
-  if(data.inferredCount>0){
-    banner=`<div class="infer-banner"><strong>⚠ ${data.inferredCount} screens have inferred scene types</strong> — scene types were guessed from content patterns because no section labels were found. Download the Word template and label your script to get more accurate results.</div>`;
-  }
-
-  let html=banner+`<div class="tbl-scroll"><table>
-    <thead><tr>
-      <th>Screen #</th><th>Scene Type</th>
-      <th>Voiceover / Script (VO) &nbsp;<span style="font-weight:400;opacity:.6;font-size:8px">✎ click to edit</span></th>
-      <th>Duration</th>
-    </tr></thead><tbody>`;
-
-  let lastSeg=0;
-  data.screens.forEach((sc,i)=>{
-    const seg=segOf[sc.screenNumber]||1;
-    if(seg!==lastSeg){
-      const nums=data.segments[seg-1]||[];
-      const segSecs=nums.reduce((a,n)=>{
-        const s=data.screens[n-1];
-        return a+(s?parseInt(s.duration.replace(/\D/g,''),10):0);
-      },0);
-      html+=`<tr class="seg-row"><td colspan="4">Segment ${seg} — ~${(segSecs/60).toFixed(1)} min</td></tr>`;
-      lastSeg=seg;
-    }
-    const voContent = sc.isCode
-      ? `<div class="code-td" contenteditable="true" data-idx="${i}" data-field="vo" spellcheck="false" onblur="saveEdit(this)">${esc(sc.vo)}</div>`
-      : `<span contenteditable="true" data-idx="${i}" data-field="vo" spellcheck="false" onblur="saveEdit(this)">${esc(sc.vo).replace(/\n/g,'<br>')}</span>`;
-    const inferTag=sc.inferred?` <span style="font-size:9px;color:#f97316;font-family:'DM Mono',monospace">inferred</span>`:'';
-    html+=`<tr class="${sc.rowClass}" style="animation-delay:${i*20}ms">
-      <td class="c-num">S${String(sc.screenNumber).padStart(2,'0')}</td>
-      <td class="c-type"><span class="pill ${sc.pillClass}">${sc.sceneType}</span>${inferTag}</td>
-      <td class="c-vo">${voContent}<div class="edit-hint">↵ changes saved automatically · reflected in PPTX export</div></td>
-      <td class="c-dur">${esc(sc.duration)}</td>
-    </tr>`;
+function renderChunks() {
+  const list = document.getElementById('chunksList');
+  list.innerHTML = '';
+  chunks.forEach((c,i) => {
+    const col = COLORS[i%COLORS.length];
+    const card = document.createElement('div');
+    card.className = 'chunk-card';
+    card.style.borderLeftColor = col;
+    card.innerHTML =
+      '<div class="chunk-card-head">' +
+        '<div class="chunk-num" style="background:'+col+'">'+(i+1)+'</div>' +
+        '<input class="chunk-title-input" value="'+esc(c.title)+'" oninput="chunks['+i+'].title=this.value">' +
+        '<div class="chunk-actions">' +
+          (i>0?'<button class="btn-sm" onclick="mergeUp('+i+')">↑ Merge</button>':'')+
+          '<button class="btn-sm" onclick="splitChunk('+i+')">Split</button>'+
+          '<button class="btn-sm danger" onclick="deleteChunk('+i+')">✕</button>'+
+        '</div></div>' +
+      '<div class="chunk-body"><textarea class="chunk-textarea" rows="4" oninput="chunks['+i+'].text=this.value">'+esc(c.text)+'</textarea></div>';
+    list.appendChild(card);
   });
-  html+=`</tbody></table></div>`;
-  document.getElementById('outBody').innerHTML=html;
+  document.getElementById('chunkCount').textContent = chunks.length + ' chunks → ' + chunks.length + ' slides';
 }
 
-// ── CARD VIEW ─────────────────────────────────────────────────
-function renderCards(data){
-  const segOf={};
-  data.segments.forEach((seg,si)=>seg.forEach(n=>segOf[n]=si+1));
+function mergeUp(i){ chunks[i-1].text=chunks[i-1].text.trim()+' '+chunks[i].text.trim(); chunks.splice(i,1); renderChunks(); }
+function splitChunk(i){
+  const ta=document.querySelectorAll('.chunk-textarea')[i], pos=ta.selectionStart, full=chunks[i].text;
+  if(pos<=0||pos>=full.length){alert('Place cursor where you want to split.');return;}
+  const a=full.slice(0,pos).trim(),b=full.slice(pos).trim();
+  if(!a||!b){alert('Not enough text.');return;}
+  chunks.splice(i,1,{title:chunks[i].title+' (1)',text:a},{title:chunks[i].title+' (2)',text:b}); renderChunks();
+}
+function deleteChunk(i){ if(chunks.length<=1){alert('Need at least one chunk.');return;} chunks.splice(i,1); renderChunks(); }
+function addChunk(){ chunks.push({title:'New Slide',text:''}); renderChunks(); }
 
-  let banner='';
-  if(data.inferredCount>0){
-    banner=`<div class="infer-banner"><strong>⚠ ${data.inferredCount} screens have inferred scene types.</strong> Use the Word template and add section labels for more accurate results.</div>`;
+async function doExport() {
+  document.querySelectorAll('.chunk-textarea').forEach((ta,i)=>{if(chunks[i])chunks[i].text=ta.value;});
+  document.querySelectorAll('.chunk-title-input').forEach((inp,i)=>{if(chunks[i])chunks[i].title=inp.value;});
+  goStep(3);
+  document.getElementById('exportLoader').classList.remove('hidden');
+  document.getElementById('exportResult').classList.add('hidden');
+  document.getElementById('exportMsg').textContent = 'Building PowerPoint...';
+
+  try {
+    const pptArr = new Uint8Array(pptBytes);
+    py.globals.set('_ppt_js', pptArr);
+    await py.runPythonAsync('_ppt = bytes(_ppt_js.to_py())');
+    py.globals.set('_chunks', JSON.stringify(chunks));
+    py.globals.set('_title', scriptFileName);
+
+    const b64 = await py.runPythonAsync('build_ppt(_ppt, _chunks, _title)');
+    const bin=atob(b64), u8=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+    const blob=new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    const url=URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'),{href:url,download:scriptFileName+'_storyboard.pptx'}).click();
+    URL.revokeObjectURL(url);
+
+    document.getElementById('exportLoader').classList.add('hidden');
+    document.getElementById('exportResult').classList.remove('hidden');
+    document.getElementById('exportResult').innerHTML =
+      '<div class="success">' +
+        '<div style="font-size:36px;margin-bottom:10px">✅</div>' +
+        '<div style="font-weight:800;font-size:16px;margin-bottom:6px">PPT Downloaded!</div>' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted);margin-bottom:16px">'+chunks.length+' content slides + 1 title slide</div>' +
+        '<button class="btn-sm" onclick="goStep(1)">Start Over</button>' +
+      '</div>';
+  } catch(e) {
+    document.getElementById('exportLoader').classList.add('hidden');
+    document.getElementById('exportResult').classList.remove('hidden');
+    document.getElementById('exportResult').innerHTML = '<div class="err"><b>⚠ Error</b>\n\n'+e.message+'</div>';
   }
+}
 
-  let html=banner+`<div class="cards">`;
-  let lastSeg=0;
-
-  data.screens.forEach((sc,i)=>{
-    const seg=segOf[sc.screenNumber]||1;
-    if(seg!==lastSeg){
-      const nums=data.segments[seg-1]||[];
-      const segSecs=nums.reduce((a,n)=>{
-        const s=data.screens[n-1];
-        return a+(s?parseInt(s.duration.replace(/\D/g,''),10):0);
-      },0);
-      html+=`<div class="seg-div">
-        <div class="seg-div-line"></div>
-        <div class="seg-div-lbl">Segment ${seg} · ~${(segSecs/60).toFixed(1)} min</div>
-        <div class="seg-div-line"></div>
-      </div>`;
-      lastSeg=seg;
-    }
-    const voHtml=sc.isCode?`<div class="code-card">${esc(sc.vo)}</div>`:`<div class="cf-vo">${esc(sc.vo).replace(/\n/g,'<br>')}</div>`;
-    const hasNotes=sc.interaction&&sc.interaction!=='—';
-    const inferBorder=sc.inferred?'border:1px dashed #fed7aa;':'';
-    html+=`<div class="card" style="animation-delay:${i*30}ms;border-top:3px solid ${sc.color};${inferBorder}">
-      <div class="card-h">
-        <div class="card-hl">
-          <div class="card-num" style="background:${sc.color}">S${String(sc.screenNumber).padStart(2,'0')}</div>
-          <div>
-            <span class="pill ${sc.pillClass}">${sc.sceneType}</span>${sc.inferred?' <span style="font-family:DM Mono,monospace;font-size:9px;color:#f97316">inferred</span>':''}
-          </div>
-        </div>
-        <div class="card-dur">${esc(sc.duration)}</div>
-      </div>
-      <div class="card-b">
-        <div><div class="cf-lbl">🎙 Voiceover (VO)</div>${voHtml}</div>
-      </div>
-    </div>`;
+function goStep(n) {
+  [1,2,3].forEach(i=>{
+    document.getElementById('step'+i).classList.toggle('hidden',i!==n);
+    const t=document.getElementById('tab'+i);
+    t.classList.remove('active','done');
+    if(i===n) t.classList.add('active'); else if(i<n) t.classList.add('done');
   });
-  html+=`</div>`;
-  document.getElementById('outBody').innerHTML=html;
 }
 
-function esc(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-window.addEventListener('load',boot);
+window.addEventListener('load', initPy);
 </script>
-
 </body>
 </html>
